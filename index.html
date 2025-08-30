@@ -470,15 +470,6 @@
                     peerConnection.addTrack(track, stream);
                 });
                 
-                // حفظ مرشحي ICE من المستخدم
-                const offerCandidates = collection(db, "calls", docRef.id, "offerCandidates");
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        userWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
-                        addDoc(offerCandidates, event.candidate.toJSON());
-                    }
-                };
-                
                 // إنشاء عرض اتصال
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
@@ -492,6 +483,15 @@
                 });
                 
                 userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${docRef.id}`);
+                
+                // بعد إنشاء docRef، قم بإعداد ICE candidates
+                const offerCandidates = collection(db, "calls", docRef.id, "offerCandidates");
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        userWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
+                        addDoc(offerCandidates, event.candidate.toJSON());
+                    }
+                };
                 
                 // الاستماع للرد من المدير
                 onSnapshot(doc(db, "calls", docRef.id), async (docSnapshot) => {
@@ -574,15 +574,6 @@
                             ]
                         });
                         
-                        // حفظ مرشحي ICE من المدير
-                        const answerCandidates = collection(db, "calls", change.doc.id, "answerCandidates");
-                        peerConnection.onicecandidate = (event) => {
-                            if (event.candidate) {
-                                adminWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
-                                addDoc(answerCandidates, event.candidate.toJSON());
-                            }
-                        };
-                        
                         // إنشاء عنصر فيديو لهذا الاتصال
                         const videoWrapper = document.createElement('div');
                         videoWrapper.className = 'video-wrapper';
@@ -605,6 +596,15 @@
                         peerConnection.ontrack = (event) => {
                             adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
                             video.srcObject = event.streams[0];
+                        };
+                        
+                        // حفظ مرشحي ICE من المدير
+                        const answerCandidates = collection(db, "calls", change.doc.id, "answerCandidates");
+                        peerConnection.onicecandidate = (event) => {
+                            if (event.candidate) {
+                                adminWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
+                                addDoc(answerCandidates, event.candidate.toJSON());
+                            }
                         };
                         
                         // الاستماع لمرشحي ICE من المستخدم
