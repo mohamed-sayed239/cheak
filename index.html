@@ -275,6 +275,11 @@
             color: #2196F3;
             font-weight: bold;
         }
+        
+        .ice {
+            color: #9C27B0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -427,7 +432,9 @@
         
         function userWriteLog(message, type = 'info') {
             const time = new Date().toLocaleTimeString();
-            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            const className = type === 'error' ? 'error' : 
+                            (type === 'success' ? 'success' : 
+                            (type === 'ice' ? 'ice' : 'info'));
             userLog.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
             userLog.scrollTop = userLog.scrollHeight;
         }
@@ -451,12 +458,26 @@
                 updateUserStatus('بدأ بث الكاميرا');
                 
                 // إنشاء اتصال نظير
-                const peerConnection = new RTCPeerConnection();
+                const peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
                 
                 // إضافة مسارات البث إلى الاتصال
                 stream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, stream);
                 });
+                
+                // حفظ مرشحي ICE من المستخدم
+                const offerCandidates = collection(db, "calls", docRef.id, "offerCandidates");
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        userWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
+                        addDoc(offerCandidates, event.candidate.toJSON());
+                    }
+                };
                 
                 // إنشاء عرض اتصال
                 const offer = await peerConnection.createOffer();
@@ -472,17 +493,36 @@
                 
                 userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${docRef.id}`);
                 
-                // الاستماع للرد
-                onSnapshot(doc(db, "calls", docRef.id), (docSnapshot) => {
+                // الاستماع للرد من المدير
+                onSnapshot(doc(db, "calls", docRef.id), async (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const data = docSnapshot.data();
-                        if (data.answer) {
+                        
+                        // معالجة الرد من المدير
+                        if (data.answer && !peerConnection.remoteDescription) {
                             userWriteLog('تم استلام رد من المدير');
-                            peerConnection.setRemoteDescription(data.answer)
-                                .then(() => userWriteLog('تم تعيين وصف الاتصال البعيد بنجاح'))
-                                .catch(error => userWriteLog(`خطأ في تعيين وصف الاتصال البعيد: ${error}`, 'error'));
+                            const answerDescription = new RTCSessionDescription(data.answer);
+                            await peerConnection.setRemoteDescription(answerDescription);
+                            userWriteLog('تم تعيين وصف الاتصال البعيد بنجاح');
                         }
                     }
+                });
+                
+                // الاستماع لمرشحي ICE من المدير
+                const answerCandidates = collection(db, "calls", docRef.id, "answerCandidates");
+                onSnapshot(answerCandidates, (snapshot) => {
+                    snapshot.docChanges().forEach(async (change) => {
+                        if (change.type === "added") {
+                            const data = change.doc.data();
+                            userWriteLog('تم استلام مرشح ICE من المدير', 'ice');
+                            try {
+                                await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+                                userWriteLog('تمت إضافة مرشح ICE بنجاح', 'ice');
+                            } catch (error) {
+                                userWriteLog(`خطأ في إضافة مرشح ICE: ${error}`, 'error');
+                            }
+                        }
+                    });
                 });
                 
                 startBtn.disabled = true;
@@ -501,7 +541,9 @@
         
         function adminWriteLog(message, type = 'info') {
             const time = new Date().toLocaleTimeString();
-            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            const className = type === 'error' ? 'error' : 
+                            (type === 'success' ? 'success' : 
+                            (type === 'ice' ? 'ice' : 'info'));
             adminLog.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
             adminLog.scrollTop = adminLog.scrollHeight;
         }
@@ -525,7 +567,21 @@
                         }
                         
                         // إنشاء اتصال نظير جديد
-                        const peerConnection = new RTCPeerConnection();
+                        const peerConnection = new RTCPeerConnection({
+                            iceServers: [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' }
+                            ]
+                        });
+                        
+                        // حفظ مرشحي ICE من المدير
+                        const answerCandidates = collection(db, "calls", change.doc.id, "answerCandidates");
+                        peerConnection.onicecandidate = (event) => {
+                            if (event.candidate) {
+                                adminWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
+                                addDoc(answerCandidates, event.candidate.toJSON());
+                            }
+                        };
                         
                         // إنشاء عنصر فيديو لهذا الاتصال
                         const videoWrapper = document.createElement('div');
@@ -551,15 +607,26 @@
                             video.srcObject = event.streams[0];
                         };
                         
-                        // معالجة مرشحي ICE
-                        peerConnection.onicecandidate = (event) => {
-                            if (event.candidate) {
-                                adminWriteLog(`تم إنشاء مرشح ICE جديد للمستخدم: ${change.doc.id}`);
-                            }
-                        };
+                        // الاستماع لمرشحي ICE من المستخدم
+                        const offerCandidates = collection(db, "calls", change.doc.id, "offerCandidates");
+                        onSnapshot(offerCandidates, (snapshot) => {
+                            snapshot.docChanges().forEach(async (change) => {
+                                if (change.type === "added") {
+                                    const data = change.doc.data();
+                                    adminWriteLog('تم استلام مرشح ICE من المستخدم', 'ice');
+                                    try {
+                                        await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+                                        adminWriteLog('تمت إضافة مرشح ICE بنجاح', 'ice');
+                                    } catch (error) {
+                                        adminWriteLog(`خطأ في إضافة مرشح ICE: ${error}`, 'error');
+                                    }
+                                }
+                            });
+                        });
                         
                         // تعيين وصف الاتصال البعيد
-                        await peerConnection.setRemoteDescription(data.offer);
+                        const offerDescription = new RTCSessionDescription(data.offer);
+                        await peerConnection.setRemoteDescription(offerDescription);
                         adminWriteLog(`تم تعيين وصف الاتصال البعيد للمستخدم: ${change.doc.id}`);
                         
                         // إنشاء رد
