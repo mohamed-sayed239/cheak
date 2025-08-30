@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebRTC Demo with Firebase</title>
+    <title>عرض توضيحي لمشاركة الكاميرا</title>
     <style>
         * {
             box-sizing: border-box;
@@ -203,6 +203,37 @@
             color: #BA68C8;
         }
         
+        .config-form {
+            margin-top: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
         footer {
             margin-top: 30px;
             text-align: center;
@@ -248,31 +279,32 @@
 </head>
 <body>
     <header>
-        <h1>WebRTC Demo with Firebase Signaling</h1>
-        <p class="description">This demo shows how to use Firebase Firestore as a signaling server for WebRTC connections.</p>
+        <h1>عرض توضيحي لمشاركة الكاميرا</h1>
+        <p class="description">هذا العرض التوضيحي يوضح كيفية استخدام Firebase كخادم إشارة لاتصالات WebRTC.</p>
     </header>
     
     <div class="container">
         <div class="tabs">
-            <button class="tab active" data-tab="user">User Page</button>
-            <button class="tab" data-tab="admin">Admin Page</button>
+            <button class="tab active" data-tab="user">صفحة المستخدم</button>
+            <button class="tab" data-tab="admin">صفحة المدير</button>
+            <button class="tab" data-tab="config">إعدادات Firebase</button>
         </div>
         
         <div class="content active" id="user-content">
-            <h2>User Page</h2>
-            <p class="description">This page represents a user who wants to share their camera with an admin.</p>
+            <h2>صفحة المستخدم</h2>
+            <p class="description">تمثل هذه الصفحة مستخدمًا يريد مشاركة كamerته مع المدير.</p>
             
             <div class="video-container">
                 <div class="video-wrapper">
                     <video id="userVideo" autoplay playsinline muted></video>
-                    <div class="video-label">Your Camera</div>
+                    <div class="video-label">كاميرتك</div>
                 </div>
             </div>
             
-            <div class="status" id="userStatus">Click "Start Sharing" to begin</div>
+            <div class="status" id="userStatus">انقر على "بدء المشاركة" للبدء</div>
             
             <div class="controls">
-                <button id="startBtn">Start Sharing</button>
+                <button id="startBtn">بدء المشاركة</button>
             </div>
             
             <div class="log-container">
@@ -281,64 +313,79 @@
         </div>
         
         <div class="content" id="admin-content">
-            <h2>Admin Page</h2>
-            <p class="description">This page represents an admin who can view all user camera streams.</p>
+            <h2>صفحة المدير</h2>
+            <p class="description">تمثل هذه الصفحة مديرًا يمكنه عرض جميع بثوث كاميرات المستخدمين.</p>
             
             <div class="video-container" id="adminVideos">
                 <div class="video-wrapper">
                     <video id="placeholderVideo" autoplay playsinline muted></video>
-                    <div class="video-label">Waiting for connections...</div>
+                    <div class="video-label">في انتظار الاتصالات...</div>
                 </div>
             </div>
             
-            <div class="status" id="adminStatus">No active connections</div>
+            <div class="status" id="adminStatus">لا توجد اتصالات نشطة</div>
             
             <div class="log-container">
                 <div id="adminLog"></div>
             </div>
         </div>
         
-        <div class="firebase-config">
-            <h3>Firebase Configuration</h3>
-            <p>To use this demo, you need to set up a Firebase project and update the configuration below:</p>
-            <ol>
-                <li>Create a Firebase project at <a href="https://console.firebase.google.com/" style="color: #4DB6AC;">Firebase Console</a></li>
-                <li>Enable Firestore Database</li>
-                <li>Update the Firebase configuration in the code with your project details</li>
-            </ol>
-        </div>
-        
-        <div class="warning">
-            <strong>Note:</strong> This is a demo for educational purposes. Please ensure you have permission to access cameras and microphones.
+        <div class="content" id="config-content">
+            <h2>إعدادات Firebase</h2>
+            <p class="description">أدخل معلومات تكوين Firebase الخاصة بك هنا.</p>
+            
+            <div class="firebase-config">
+                <h3>تكوين Firebase</h3>
+                <p>لاستخدام هذا العرض التوضيحي، تحتاج إلى إعداد مشروع Firebase وتحديث التكوين أدناه:</p>
+                
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="apiKey">API Key:</label>
+                        <input type="text" id="apiKey" placeholder="أدخل مفتاح API">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="authDomain">Auth Domain:</label>
+                        <input type="text" id="authDomain" placeholder="أدخل نطاق المصادقة">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="projectId">Project ID:</label>
+                        <input type="text" id="projectId" placeholder="أدخل معرف المشروع">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="storageBucket">Storage Bucket:</label>
+                        <input type="text" id="storageBucket" placeholder="أدخل bucket التخزين">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="messagingSenderId">Messaging Sender ID:</label>
+                        <input type="text" id="messagingSenderId" placeholder="أدخل معرف المرسل">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="appId">App ID:</label>
+                        <input type="text" id="appId" placeholder="أدخل معرف التطبيق">
+                    </div>
+                    
+                    <button class="save-btn" id="saveConfig">حفظ الإعدادات</button>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <strong>ملاحظة:</strong> هذا عرض توضيحي لأغراض تعليمية. يرجى التأكد من الحصول على إذن لاستخدام الكاميرات والميكروفونات.
+            </div>
         </div>
     </div>
     
     <footer>
-        <p>WebRTC with Firebase Signaling Demo - 2023</p>
+        <p>عرض توضيحي لـ WebRTC مع Firebase - 2023</p>
     </footer>
 
     <!-- Firebase App (core Firebase SDK) -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-        
-        // Firebase configuration - Replace with your app's config
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const callsCollection = collection(db, "calls");
-        
-        // Tab switching functionality
+        // وظيفة تبديل علامات التبويب
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -348,8 +395,69 @@
                 document.getElementById(tab.dataset.tab + '-content').classList.add('active');
             });
         });
+
+        // حفظ إعدادات Firebase
+        document.getElementById('saveConfig').addEventListener('click', () => {
+            const config = {
+                apiKey: document.getElementById('apiKey').value,
+                authDomain: document.getElementById('authDomain').value,
+                projectId: document.getElementById('projectId').value,
+                storageBucket: document.getElementById('storageBucket').value,
+                messagingSenderId: document.getElementById('messagingSenderId').value,
+                appId: document.getElementById('appId').value
+            };
+            
+            localStorage.setItem('firebaseConfig', JSON.stringify(config));
+            alert('تم حفظ إعدادات Firebase بنجاح!');
+        });
+
+        // تحميل إعدادات Firebase المحفوظة
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                document.getElementById('apiKey').value = config.apiKey || '';
+                document.getElementById('authDomain').value = config.authDomain || '';
+                document.getElementById('projectId').value = config.projectId || '';
+                document.getElementById('storageBucket').value = config.storageBucket || '';
+                document.getElementById('messagingSenderId').value = config.messagingSenderId || '';
+                document.getElementById('appId').value = config.appId || '';
+            }
+        }
+
+        // تحميل الإعدادات عند بدء الصفحة
+        loadConfig();
+
+        // استيراد الدوال التي تحتاجها من SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
         
-        // User Page Functionality
+        // تهيئة Firebase
+        let app;
+        let db;
+        let callsCollection;
+        
+        function initializeFirebase() {
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            if (!savedConfig) {
+                console.error('لم يتم تكوين Firebase. يرجى إدخال إعدادات Firebase في علامة التبويب "إعدادات Firebase".');
+                return false;
+            }
+            
+            const firebaseConfig = JSON.parse(savedConfig);
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                callsCollection = collection(db, "calls");
+                return true;
+            } catch (error) {
+                console.error('خطأ في تهيئة Firebase:', error);
+                return false;
+            }
+        }
+        
+        // وظائف صفحة المستخدم
         const userVideo = document.getElementById('userVideo');
         const startBtn = document.getElementById('startBtn');
         const userStatus = document.getElementById('userStatus');
@@ -367,9 +475,15 @@
         }
         
         startBtn.addEventListener('click', async () => {
+            // التحقق من تهيئة Firebase
+            if (!initializeFirebase()) {
+                userWriteLog('خطأ: لم يتم تكوين Firebase. يرجى إدخال إعدادات Firebase في علامة التبويب "إعدادات Firebase".', 'error');
+                return;
+            }
+            
             try {
-                userWriteLog('Requesting camera and microphone access...');
-                updateUserStatus('Requesting camera access...');
+                userWriteLog('جاري طلب إذن استخدام الكاميرا والميكروفون...');
+                updateUserStatus('جاري طلب إذن الكاميرا...');
                 
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: true, 
@@ -377,52 +491,54 @@
                 });
                 
                 userVideo.srcObject = stream;
-                userWriteLog('Camera and microphone access granted');
-                updateUserStatus('Camera sharing started');
+                userWriteLog('تم منح إذن استخدام الكاميرا والميكروفون');
+                updateUserStatus('بدأ بث الكاميرا');
                 
-                // Create peer connection
+                // إنشاء اتصال نظير
                 const peerConnection = new RTCPeerConnection();
+                
+                // إضافة مسارات البث إلى الاتصال
                 stream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, stream);
                 });
                 
-                // Generate offer
+                // إنشاء عرض اتصال
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 
-                userWriteLog('Created WebRTC offer');
+                userWriteLog('تم إنشاء عرض WebRTC');
                 
-                // Save offer to Firestore
+                // حفظ العرض في Firestore
                 const docRef = await addDoc(callsCollection, {
                     offer: offer,
                     createdAt: new Date()
                 });
                 
-                userWriteLog(`Offer saved to Firestore with ID: ${docRef.id}`);
+                userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${docRef.id}`);
                 
-                // Listen for answer
+                // الاستماع للرد
                 onSnapshot(doc(db, "calls", docRef.id), (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const data = docSnapshot.data();
                         if (data.answer) {
-                            userWriteLog('Received answer from admin');
+                            userWriteLog('تم استلام رد من المدير');
                             peerConnection.setRemoteDescription(data.answer)
-                                .then(() => userWriteLog('Remote description set successfully'))
-                                .catch(error => userWriteLog(`Error setting remote description: ${error}`, 'error'));
+                                .then(() => userWriteLog('تم تعيين وصف الاتصال البعيد بنجاح'))
+                                .catch(error => userWriteLog(`خطأ في تعيين وصف الاتصال البعيد: ${error}`, 'error'));
                         }
                     }
                 });
                 
                 startBtn.disabled = true;
-                startBtn.textContent = 'Sharing Active';
+                startBtn.textContent = 'مشاركة نشطة';
                 
             } catch (error) {
-                userWriteLog(`Error: ${error.message}`, 'error');
-                updateUserStatus('Error accessing camera');
+                userWriteLog(`خطأ: ${error.message}`, 'error');
+                updateUserStatus('خطأ في الوصول إلى الكاميرا');
             }
         });
         
-        // Admin Page Functionality
+        // وظائف صفحة المدير
         const adminVideos = document.getElementById('adminVideos');
         const adminStatus = document.getElementById('adminStatus');
         const adminLog = document.getElementById('adminLog');
@@ -438,68 +554,73 @@
             adminStatus.textContent = message;
         }
         
-        // Listen for new offers in Firestore
-        onSnapshot(callsCollection, (snapshot) => {
-            snapshot.docChanges().forEach(async (change) => {
-                if (change.type === "added") {
-                    const data = change.doc.data();
-                    if (data.offer && !data.answer) {
-                        adminWriteLog(`New offer received from user: ${change.doc.id}`);
-                        updateAdminStatus('New connection received');
-                        
-                        // Remove placeholder if it exists
-                        if (document.getElementById('placeholderVideo')) {
-                            adminVideos.innerHTML = '';
+        // تهيئة Firebase للصفحة الإدارية
+        if (initializeFirebase()) {
+            // الاستماع للعروض الجديدة في Firestore
+            onSnapshot(callsCollection, (snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        if (data.offer && !data.answer) {
+                            adminWriteLog(`تم استلام عرض جديد من المستخدم: ${change.doc.id}`);
+                            updateAdminStatus('تم استلام اتصال جديد');
+                            
+                            // إزالة العنصر النائب إذا كان موجودًا
+                            if (document.getElementById('placeholderVideo')) {
+                                adminVideos.innerHTML = '';
+                            }
+                            
+                            // إنشاء اتصال نظير جديد
+                            const peerConnection = new RTCPeerConnection();
+                            
+                            // إنشاء عنصر فيديو لهذا الاتصال
+                            const videoWrapper = document.createElement('div');
+                            videoWrapper.className = 'video-wrapper';
+                            videoWrapper.id = `video-${change.doc.id}`;
+                            
+                            const video = document.createElement('video');
+                            video.autoplay = true;
+                            video.playsInline = true;
+                            video.id = `video-${change.doc.id}`;
+                            
+                            const videoLabel = document.createElement('div');
+                            videoLabel.className = 'video-label';
+                            videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
+                            
+                            videoWrapper.appendChild(video);
+                            videoWrapper.appendChild(videoLabel);
+                            adminVideos.appendChild(videoWrapper);
+                            
+                            // التعامل مع البث الوارد
+                            peerConnection.ontrack = (event) => {
+                                adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
+                                video.srcObject = event.streams[0];
+                            };
+                            
+                            // تعيين وصف الاتصال البعيد
+                            await peerConnection.setRemoteDescription(data.offer);
+                            adminWriteLog(`تم تعيين وصف الاتصال البعيد للمستخدم: ${change.doc.id}`);
+                            
+                            // إنشاء رد
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+                            
+                            // حفظ الرد في Firestore
+                            await updateDoc(doc(db, "calls", change.doc.id), {
+                                answer: answer
+                            });
+                            
+                            adminWriteLog(`تم إرسال الرد إلى المستخدم: ${change.doc.id}`);
+                            updateAdminStatus(`${adminVideos.childElementCount} اتصالات نشطة`);
                         }
-                        
-                        // Create a new peer connection
-                        const peerConnection = new RTCPeerConnection();
-                        
-                        // Create video element for this connection
-                        const videoWrapper = document.createElement('div');
-                        videoWrapper.className = 'video-wrapper';
-                        videoWrapper.id = `video-${change.doc.id}`;
-                        
-                        const video = document.createElement('video');
-                        video.autoplay = true;
-                        video.playsInline = true;
-                        video.id = `video-${change.doc.id}`;
-                        
-                        const videoLabel = document.createElement('div');
-                        videoLabel.className = 'video-label';
-                        videoLabel.textContent = `User: ${change.doc.id.substring(0, 8)}`;
-                        
-                        videoWrapper.appendChild(video);
-                        videoWrapper.appendChild(videoLabel);
-                        adminVideos.appendChild(videoWrapper);
-                        
-                        // Handle incoming stream
-                        peerConnection.ontrack = (event) => {
-                            adminWriteLog(`Received stream from user: ${change.doc.id}`);
-                            video.srcObject = event.streams[0];
-                        };
-                        
-                        // Set remote description
-                        await peerConnection.setRemoteDescription(data.offer);
-                        adminWriteLog(`Remote description set for user: ${change.doc.id}`);
-                        
-                        // Create answer
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
-                        
-                        // Save answer to Firestore
-                        await updateDoc(doc(db, "calls", change.doc.id), {
-                            answer: answer
-                        });
-                        
-                        adminWriteLog(`Answer sent to user: ${change.doc.id}`);
-                        updateAdminStatus(`${adminVideos.childElementCount} active connections`);
                     }
-                }
+                });
             });
-        });
-        
-        adminWriteLog('Admin page loaded. Listening for user connections...');
+            
+            adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لاتصالات المستخدمين...');
+        } else {
+            adminWriteLog('خطأ: لم يتم تكوين Firebase. يرجى إدخال إعدادات Firebase في علامة التبويب "إعدادات Firebase".', 'error');
+        }
     </script>
 </body>
 </html>
