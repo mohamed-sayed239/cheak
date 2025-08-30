@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تجربة الكاميرا والميكروفون</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #fdbb2d;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #f0f0f0;
+        }
+        
+        .video-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        #preview {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 10px;
+            border: 3px solid #fdbb2d;
+            transform: scaleX(-1); /* Mirror effect for front camera */
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        #startBtn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        #startBtn:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+        }
+        
+        #recordBtn {
+            background: #f44336;
+            color: white;
+        }
+        
+        #recordBtn:hover {
+            background: #d32f2f;
+            transform: translateY(-3px);
+        }
+        
+        #recordBtn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #fdbb2d;
+            font-size: 1.2rem;
+        }
+        
+        .log-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        #log {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            font-family: monospace;
+        }
+        
+        .warning {
+            background: rgba(255, 152, 0, 0.2);
+            border-left: 5px solid #ff9800;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>تجربة الكاميرا والميكروفون</h1>
+        <p class="description">هذا الموقع لتجربة تقنية طلب إذن الكاميرا والميكروفون، وعرض الفيديو، والتسجيل ثم رفع التسجيل إلى خادم محلي. للاستخدام التعليمي فقط.</p>
+    </header>
+    
+    <div class="container">
+        <div class="video-container">
+            <video id="preview" autoplay playsinline muted></video>
+        </div>
+        
+        <div class="status" id="status">لم يتم بدء الكاميرا بعد</div>
+        
+        <div class="controls">
+            <button id="startBtn">بدء الكاميرا والميكروفون</button>
+            <button id="recordBtn" disabled>تسجيل 5 ثواني ورفع</button>
+        </div>
+        
+        <div class="log-container">
+            <div id="log"></div>
+        </div>
+        
+        <div class="warning">
+            <strong>ملاحظة:</strong> هذا الموقع للاستخدام التعليمي فقط. يرجى عدم استخدامه لتسجيل الأشخاص دون موافقتهم.
+        </div>
+    </div>
+    
+    <footer>
+        <p>تم التطوير لأغراض تعليمية - 2023</p>
+    </footer>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const preview = document.getElementById('preview');
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        let stream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        function writeLog(message) {
+            log.textContent += new Date().toLocaleTimeString() + ' - ' + message + '\n';
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            status.textContent = message;
+        }
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                writeLog('جاري طلب إذن الكاميرا والميكروفون...');
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }, 
+                    audio: true 
+                });
+                
+                preview.srcObject = stream;
+                recordBtn.disabled = false;
+                startBtn.disabled = true;
+                startBtn.textContent = 'تم التفعيل';
+                
+                updateStatus('الكاميرا والميكروفون نشطان');
+                writeLog('تم تفعيل الكاميرا والميكروفون بنجاح');
+            } catch (err) {
+                updateStatus('فشل في الوصول إلى الكاميرا/الميكروفون');
+                writeLog('خطأ: ' + err.message);
+            }
+        });
+
+        recordBtn.addEventListener('click', () => {
+            if (!stream) {
+                writeLog('لم يتم بدء الكاميرا بعد. يرجى الضغط على "بدء الكاميرا والميكروفون" أولاً.');
+                return;
+            }
+
+            // إعداد مسجل الوسائط
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9,opus'
+            });
+
+            recordedChunks = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const fileName = 'recording_' + new Date().toISOString().replace(/:/g, '-') + '.webm';
+                
+                writeLog('تم التسجيل. حجم الملف: ' + (blob.size / 1024).toFixed(1) + ' كيلوبايت');
+                
+                // محاكاة عملية الرفع (لأننا لا نملك خادم حقيقي في هذا المثال)
+                updateStatus('جاري رفع الملف...');
+                writeLog('جاري محاكاة رفع الملف إلى الخادم...');
+                
+                // محاكاة وقت الرفع
+                setTimeout(() => {
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = fileName;
+                    a.textContent = 'تحميل التسجيل';
+                    a.style.color = '#fdbb2d';
+                    a.style.display = 'block';
+                    a.style.marginTop = '10px';
+                    
+                    writeLog('تمت محاكاة الرفع بنجاح. يمكنك تحميل التسجيل الآن.');
+                    updateStatus('جاهز للتسجيل مرة أخرى');
+                    
+                    log.appendChild(a);
+                }, 2000);
+            };
+            
+            // بدء التسجيل
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            recordBtn.textContent = 'جاري التسجيل...';
+            updateStatus('جاري التسجيل (5 ثوانٍ)...');
+            writeLog('بدأ التسجيل...');
+            
+            // إيقاف التسجيل بعد 5 ثواني
+            setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    recordBtn.disabled = false;
+                    recordBtn.textContent = 'تسجيل 5 ثواني ورفع';
+                    writeLog('تم إيقاف التسجيل.');
+                }
+            }, 5000);
+        });
+
+        writeLog('تم تحميل الصفحة بنجاح. اضغط على "بدء الكاميرا والميكروفون" لبدء التجربة.');
+    </script>
+</body>
+</html>
