@@ -103,12 +103,6 @@
             overflow: hidden;
             background: #000;
             border: 3px solid #fdbb2d;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .video-wrapper:hover {
-            transform: scale(1.05);
         }
         
         video {
@@ -127,27 +121,6 @@
             padding: 5px;
             text-align: center;
             font-size: 14px;
-        }
-        
-        .video-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 5px;
-        }
-        
-        .control-btn {
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
         }
         
         .controls {
@@ -447,7 +420,7 @@
                 document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
                 
                 tab.classList.add('active');
-                document.getElementById(tab.dataset.tab + '-content').classlassList.add('active');
+                document.getElementById(tab.dataset.tab + '-content').classList.add('active');
             });
         });
         
@@ -606,45 +579,20 @@
                         videoWrapper.className = 'video-wrapper';
                         videoWrapper.id = `video-${change.doc.id}`;
                         
-                        const video = document.createElement('video');
-                        video.autoplay = true;
-                        video.playsInline = true;
-                        video.muted = true; // إضافة muted=true لإصلاح المشكلة
-                        video.id = `video-${change.doc.id}`;
+                      const video = document.createElement('video');
+video.autoplay = true;
+video.playsInline = true;
+video.muted = true; // 👈 لازم عشان الفيديو يشتغل بدون تدخل المستخدم
+video.id = `video-${change.doc.id}`;
+
                         
                         const videoLabel = document.createElement('div');
                         videoLabel.className = 'video-label';
                         videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
                         
-                        // إضافة زر لإلغاء كتم الصوت
-                        const unmuteBtn = document.createElement('button');
-                        unmuteBtn.className = 'control-btn';
-                        unmuteBtn.innerHTML = '🔇';
-                        unmuteBtn.title = 'إلغاء كتم الصوت';
-                        
-                        const videoControls = document.createElement('div');
-                        videoControls.className = 'video-controls';
-                        videoControls.appendChild(unmuteBtn);
-                        
                         videoWrapper.appendChild(video);
                         videoWrapper.appendChild(videoLabel);
-                        videoWrapper.appendChild(videoControls);
                         adminVideos.appendChild(videoWrapper);
-                        
-                        // إلغاء كتم الصوت عند النقر
-                        unmuteBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            video.muted = !video.muted;
-                            unmuteBtn.innerHTML = video.muted ? '🔇' : '🔊';
-                            unmuteBtn.title = video.muted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
-                        });
-                        
-                        // إلغاء كتم الصوت عند النقر على الفيديو
-                        videoWrapper.addEventListener('click', () => {
-                            video.muted = !video.muted;
-                            unmuteBtn.innerHTML = video.muted ? '🔇' : '🔊';
-                            unmuteBtn.title = video.muted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
-                        });
                         
                         // التعامل مع البث الوارد
                         peerConnection.ontrack = (event) => {
