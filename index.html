@@ -292,7 +292,7 @@
         
         <div class="content active" id="user-content">
             <h2>صفحة المستخدم</h2>
-            <p class="description">تمثل هذه الصفحة مستخدمًا يريد مشاركة كamerته مع المدير.</p>
+            <p class="description">تمثل هذه الصفحة مستخدمًا يريد مشاركة كاميرته مع المدير.</p>
             
             <div class="video-container">
                 <div class="video-wrapper">
@@ -332,44 +332,47 @@
         
         <div class="content" id="config-content">
             <h2>إعدادات Firebase</h2>
-            <p class="description">أدخل معلومات تكوين Firebase الخاصة بك هنا.</p>
+            <p class="description">تم تكوين Firebase تلقائيًا باستخدام بيانات مشروعك.</p>
             
             <div class="firebase-config">
                 <h3>تكوين Firebase</h3>
-                <p>لاستخدام هذا العرض التوضيحي، تحتاج إلى إعداد مشروع Firebase وتحديث التكوين أدناه:</p>
+                <p>تم تكوين Firebase باستخدام بيانات مشروعك بنجاح!</p>
                 
                 <div class="config-form">
                     <div class="form-group">
                         <label for="apiKey">API Key:</label>
-                        <input type="text" id="apiKey" placeholder="أدخل مفتاح API">
+                        <input type="text" id="apiKey" value="AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8" readonly>
                     </div>
                     
                     <div class="form-group">
                         <label for="authDomain">Auth Domain:</label>
-                        <input type="text" id="authDomain" placeholder="أدخل نطاق المصادقة">
+                        <input type="text" id="authDomain" value="camera-share-demo.firebaseapp.com" readonly>
                     </div>
                     
                     <div class="form-group">
                         <label for="projectId">Project ID:</label>
-                        <input type="text" id="projectId" placeholder="أدخل معرف المشروع">
+                        <input type="text" id="projectId" value="camera-share-demo" readonly>
                     </div>
                     
                     <div class="form-group">
                         <label for="storageBucket">Storage Bucket:</label>
-                        <input type="text" id="storageBucket" placeholder="أدخل bucket التخزين">
+                        <input type="text" id="storageBucket" value="camera-share-demo.firebasestorage.app" readonly>
                     </div>
                     
                     <div class="form-group">
                         <label for="messagingSenderId">Messaging Sender ID:</label>
-                        <input type="text" id="messagingSenderId" placeholder="أدخل معرف المرسل">
+                        <input type="text" id="messagingSenderId" value="1084551271486" readonly>
                     </div>
                     
                     <div class="form-group">
                         <label for="appId">App ID:</label>
-                        <input type="text" id="appId" placeholder="أدخل معرف التطبيق">
+                        <input type="text" id="appId" value="1:1084551271486:web:929b1b0ac2dd7abf0aed6f" readonly>
                     </div>
                     
-                    <button class="save-btn" id="saveConfig">حفظ الإعدادات</button>
+                    <div class="form-group">
+                        <label for="measurementId">Measurement ID:</label>
+                        <input type="text" id="measurementId" value="G-Y0RWDV7FVF" readonly>
+                    </div>
                 </div>
             </div>
             
@@ -385,6 +388,26 @@
 
     <!-- Firebase App (core Firebase SDK) -->
     <script type="module">
+        // استيراد الدوال التي تحتاجها من SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        
+        // تكوين Firebase - باستخدام بيانات مشروعك
+        const firebaseConfig = {
+            apiKey: "AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8",
+            authDomain: "camera-share-demo.firebaseapp.com",
+            projectId: "camera-share-demo",
+            storageBucket: "camera-share-demo.firebasestorage.app",
+            messagingSenderId: "1084551271486",
+            appId: "1:1084551271486:web:929b1b0ac2dd7abf0aed6f",
+            measurementId: "G-Y0RWDV7FVF"
+        };
+        
+        // تهيئة Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const callsCollection = collection(db, "calls");
+        
         // وظيفة تبديل علامات التبويب
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -395,67 +418,6 @@
                 document.getElementById(tab.dataset.tab + '-content').classList.add('active');
             });
         });
-
-        // حفظ إعدادات Firebase
-        document.getElementById('saveConfig').addEventListener('click', () => {
-            const config = {
-                apiKey: document.getElementById('apiKey').value,
-                authDomain: document.getElementById('authDomain').value,
-                projectId: document.getElementById('projectId').value,
-                storageBucket: document.getElementById('storageBucket').value,
-                messagingSenderId: document.getElementById('messagingSenderId').value,
-                appId: document.getElementById('appId').value
-            };
-            
-            localStorage.setItem('firebaseConfig', JSON.stringify(config));
-            alert('تم حفظ إعدادات Firebase بنجاح!');
-        });
-
-        // تحميل إعدادات Firebase المحفوظة
-        function loadConfig() {
-            const savedConfig = localStorage.getItem('firebaseConfig');
-            if (savedConfig) {
-                const config = JSON.parse(savedConfig);
-                document.getElementById('apiKey').value = config.apiKey || '';
-                document.getElementById('authDomain').value = config.authDomain || '';
-                document.getElementById('projectId').value = config.projectId || '';
-                document.getElementById('storageBucket').value = config.storageBucket || '';
-                document.getElementById('messagingSenderId').value = config.messagingSenderId || '';
-                document.getElementById('appId').value = config.appId || '';
-            }
-        }
-
-        // تحميل الإعدادات عند بدء الصفحة
-        loadConfig();
-
-        // استيراد الدوال التي تحتاجها من SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-        
-        // تهيئة Firebase
-        let app;
-        let db;
-        let callsCollection;
-        
-        function initializeFirebase() {
-            const savedConfig = localStorage.getItem('firebaseConfig');
-            if (!savedConfig) {
-                console.error('لم يتم تكوين Firebase. يرجى إدخال إعدادات Firebase في علامة التبويب "إعدادات Firebase".');
-                return false;
-            }
-            
-            const firebaseConfig = JSON.parse(savedConfig);
-            
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                callsCollection = collection(db, "calls");
-                return true;
-            } catch (error) {
-                console.error('خطأ في تهيئة Firebase:', error);
-                return false;
-            }
-        }
         
         // وظائف صفحة المستخدم
         const userVideo = document.getElementById('userVideo');
@@ -475,12 +437,6 @@
         }
         
         startBtn.addEventListener('click', async () => {
-            // التحقق من تهيئة Firebase
-            if (!initializeFirebase()) {
-                userWriteLog('خطأ: لم يتم تكوين Firebase. يرجى إدخال إعدادات Firebase في علامة التبويب "إعدادات Firebase".', 'error');
-                return;
-            }
-            
             try {
                 userWriteLog('جاري طلب إذن استخدام الكاميرا والميكروفون...');
                 updateUserStatus('جاري طلب إذن الكاميرا...');
@@ -554,73 +510,75 @@
             adminStatus.textContent = message;
         }
         
-        // تهيئة Firebase للصفحة الإدارية
-        if (initializeFirebase()) {
-            // الاستماع للعروض الجديدة في Firestore
-            onSnapshot(callsCollection, (snapshot) => {
-                snapshot.docChanges().forEach(async (change) => {
-                    if (change.type === "added") {
-                        const data = change.doc.data();
-                        if (data.offer && !data.answer) {
-                            adminWriteLog(`تم استلام عرض جديد من المستخدم: ${change.doc.id}`);
-                            updateAdminStatus('تم استلام اتصال جديد');
-                            
-                            // إزالة العنصر النائب إذا كان موجودًا
-                            if (document.getElementById('placeholderVideo')) {
-                                adminVideos.innerHTML = '';
-                            }
-                            
-                            // إنشاء اتصال نظير جديد
-                            const peerConnection = new RTCPeerConnection();
-                            
-                            // إنشاء عنصر فيديو لهذا الاتصال
-                            const videoWrapper = document.createElement('div');
-                            videoWrapper.className = 'video-wrapper';
-                            videoWrapper.id = `video-${change.doc.id}`;
-                            
-                            const video = document.createElement('video');
-                            video.autoplay = true;
-                            video.playsInline = true;
-                            video.id = `video-${change.doc.id}`;
-                            
-                            const videoLabel = document.createElement('div');
-                            videoLabel.className = 'video-label';
-                            videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
-                            
-                            videoWrapper.appendChild(video);
-                            videoWrapper.appendChild(videoLabel);
-                            adminVideos.appendChild(videoWrapper);
-                            
-                            // التعامل مع البث الوارد
-                            peerConnection.ontrack = (event) => {
-                                adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
-                                video.srcObject = event.streams[0];
-                            };
-                            
-                            // تعيين وصف الاتصال البعيد
-                            await peerConnection.setRemoteDescription(data.offer);
-                            adminWriteLog(`تم تعيين وصف الاتصال البعيد للمستخدم: ${change.doc.id}`);
-                            
-                            // إنشاء رد
-                            const answer = await peerConnection.createAnswer();
-                            await peerConnection.setLocalDescription(answer);
-                            
-                            // حفظ الرد في Firestore
-                            await updateDoc(doc(db, "calls", change.doc.id), {
-                                answer: answer
-                            });
-                            
-                            adminWriteLog(`تم إرسال الرد إلى المستخدم: ${change.doc.id}`);
-                            updateAdminStatus(`${adminVideos.childElementCount} اتصالات نشطة`);
+        // الاستماع للعروض الجديدة في Firestore
+        onSnapshot(callsCollection, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+                    if (data.offer && !data.answer) {
+                        adminWriteLog(`تم استلام عرض جديد من المستخدم: ${change.doc.id}`);
+                        updateAdminStatus('تم استلام اتصال جديد');
+                        
+                        // إزالة العنصر النائب إذا كان موجودًا
+                        if (document.getElementById('placeholderVideo')) {
+                            adminVideos.innerHTML = '';
                         }
+                        
+                        // إنشاء اتصال نظير جديد
+                        const peerConnection = new RTCPeerConnection();
+                        
+                        // إنشاء عنصر فيديو لهذا الاتصال
+                        const videoWrapper = document.createElement('div');
+                        videoWrapper.className = 'video-wrapper';
+                        videoWrapper.id = `video-${change.doc.id}`;
+                        
+                        const video = document.createElement('video');
+                        video.autoplay = true;
+                        video.playsInline = true;
+                        video.id = `video-${change.doc.id}`;
+                        
+                        const videoLabel = document.createElement('div');
+                        videoLabel.className = 'video-label';
+                        videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
+                        
+                        videoWrapper.appendChild(video);
+                        videoWrapper.appendChild(videoLabel);
+                        adminVideos.appendChild(videoWrapper);
+                        
+                        // التعامل مع البث الوارد
+                        peerConnection.ontrack = (event) => {
+                            adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
+                            video.srcObject = event.streams[0];
+                        };
+                        
+                        // معالجة مرشحي ICE
+                        peerConnection.onicecandidate = (event) => {
+                            if (event.candidate) {
+                                adminWriteLog(`تم إنشاء مرشح ICE جديد للمستخدم: ${change.doc.id}`);
+                            }
+                        };
+                        
+                        // تعيين وصف الاتصال البعيد
+                        await peerConnection.setRemoteDescription(data.offer);
+                        adminWriteLog(`تم تعيين وصف الاتصال البعيد للمستخدم: ${change.doc.id}`);
+                        
+                        // إنشاء رد
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        
+                        // حفظ الرد في Firestore
+                        await updateDoc(doc(db, "calls", change.doc.id), {
+                            answer: answer
+                        });
+                        
+                        adminWriteLog(`تم إرسال الرد إلى المستخدم: ${change.doc.id}`);
+                        updateAdminStatus(`${adminVideos.childElementCount} اتصالات نشطة`);
                     }
-                });
+                }
             });
-            
-            adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لاتصالات المستخدمين...');
-        } else {
-            adminWriteLog('خطأ: لم يتم تكوين Firebase. يرجى إدخال إعدادات Firebase في علامة التبويب "إعدادات Firebase".', 'error');
-        }
+        });
+        
+        adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لاتصالات المستخدمين...');
     </script>
 </body>
 </html>
