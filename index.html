@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تجربة الكاميرا والميكروفون - رفع إلى خادم خارجي</title>
+    <title>WebRTC Demo with Firebase</title>
     <style>
         * {
             box-sizing: border-box;
@@ -23,7 +23,7 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             width: 100%;
             background: rgba(0, 0, 0, 0.7);
             border-radius: 15px;
@@ -50,45 +50,77 @@
             color: #f0f0f0;
         }
         
-        .video-container {
+        .tabs {
             display: flex;
             justify-content: center;
             margin-bottom: 25px;
+            gap: 15px;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+            background: #2196F3;
+            color: white;
+        }
+        
+        .tab:hover {
+            background: #0b7dda;
+            transform: translateY(-3px);
+        }
+        
+        .tab.active {
+            background: #4CAF50;
+        }
+        
+        .content {
+            display: none;
+        }
+        
+        .content.active {
+            display: block;
+        }
+        
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .video-wrapper {
             position: relative;
-        }
-        
-        #preview {
-            width: 100%;
-            max-width: 500px;
-            height: auto;
+            width: 300px;
+            height: 225px;
             border-radius: 10px;
+            overflow: hidden;
+            background: #000;
             border: 3px solid #fdbb2d;
-            background-color: #000;
-            min-height: 280px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #aaa;
-            transform: scaleX(-1); /* Mirror effect for front camera */
         }
         
-        .camera-placeholder {
+        video {
             width: 100%;
-            max-width: 500px;
-            height: 280px;
-            border-radius: 10px;
-            border: 3px dashed #fdbb2d;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.3);
-            color: #ccc;
+            height: 100%;
+            object-fit: cover;
         }
         
-        .camera-icon {
-            font-size: 64px;
-            margin-bottom: 15px;
+        .video-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            text-align: center;
+            font-size: 14px;
         }
         
         .controls {
@@ -120,27 +152,7 @@
             transform: translateY(-3px);
         }
         
-        #recordBtn {
-            background: #f44336;
-            color: white;
-        }
-        
-        #recordBtn:hover {
-            background: #d32f2f;
-            transform: translateY(-3px);
-        }
-        
-        #simulateBtn {
-            background: #2196F3;
-            color: white;
-        }
-        
-        #simulateBtn:hover {
-            background: #0b7dda;
-            transform: translateY(-3px);
-        }
-        
-        #recordBtn:disabled, #simulateBtn:disabled {
+        #startBtn:disabled {
             background: #666;
             cursor: not-allowed;
             transform: none;
@@ -178,29 +190,7 @@
             border-radius: 5px;
         }
         
-        .solutions {
-            background: rgba(0, 150, 136, 0.2);
-            border-left: 5px solid #009688;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 5px;
-        }
-        
-        .solutions h3 {
-            margin-bottom: 10px;
-            color: #4DB6AC;
-        }
-        
-        .solutions ul {
-            padding-right: 20px;
-            margin-bottom: 10px;
-        }
-        
-        .solutions li {
-            margin-bottom: 8px;
-        }
-        
-        .server-info {
+        .firebase-config {
             background: rgba(156, 39, 176, 0.2);
             border-left: 5px solid #9C27B0;
             padding: 15px;
@@ -208,7 +198,7 @@
             border-radius: 5px;
         }
         
-        .server-info h3 {
+        .firebase-config h3 {
             margin-bottom: 10px;
             color: #BA68C8;
         }
@@ -225,13 +215,18 @@
                 font-size: 2rem;
             }
             
-            button {
+            button, .tab {
                 width: 100%;
                 margin-bottom: 10px;
             }
             
-            .controls {
+            .controls, .tabs {
                 flex-direction: column;
+            }
+            
+            .video-wrapper {
+                width: 100%;
+                height: 200px;
             }
         }
 
@@ -249,304 +244,262 @@
             color: #2196F3;
             font-weight: bold;
         }
-        
-        .uploading {
-            color: #FF9800;
-            font-weight: bold;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background-color: #444;
-            border-radius: 5px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-        
-        .progress {
-            height: 100%;
-            background-color: #4CAF50;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
 <body>
     <header>
-        <h1>تجربة الكاميرا والميكروفون</h1>
-        <p class="description">هذا الموقع لتجربة تقنية طلب إذن الكاميرا والميكروفون، وعرض الفيديو، والتسجيل ثم رفع التسجيل إلى خادم خارجي. للاستخدام التعليمي فقط.</p>
+        <h1>WebRTC Demo with Firebase Signaling</h1>
+        <p class="description">This demo shows how to use Firebase Firestore as a signaling server for WebRTC connections.</p>
     </header>
     
     <div class="container">
-        <div class="video-container">
-            <div class="camera-placeholder" id="placeholder">
-                <div class="camera-icon">📷</div>
-                <p>معاينة الكاميرا ستظهر هنا</p>
+        <div class="tabs">
+            <button class="tab active" data-tab="user">User Page</button>
+            <button class="tab" data-tab="admin">Admin Page</button>
+        </div>
+        
+        <div class="content active" id="user-content">
+            <h2>User Page</h2>
+            <p class="description">This page represents a user who wants to share their camera with an admin.</p>
+            
+            <div class="video-container">
+                <div class="video-wrapper">
+                    <video id="userVideo" autoplay playsinline muted></video>
+                    <div class="video-label">Your Camera</div>
+                </div>
             </div>
-            <video id="preview" autoplay playsinline muted style="display:none;"></video>
+            
+            <div class="status" id="userStatus">Click "Start Sharing" to begin</div>
+            
+            <div class="controls">
+                <button id="startBtn">Start Sharing</button>
+            </div>
+            
+            <div class="log-container">
+                <div id="userLog"></div>
+            </div>
         </div>
         
-        <div class="status" id="status">لم يتم بدء الكاميرا بعد</div>
-        
-        <div class="controls">
-            <button id="startBtn">بدء الكاميرا والميكروفون</button>
-            <button id="recordBtn" disabled>تسجيل 5 ثواني ورفع</button>
-            <button id="simulateBtn">وضع المحاكاة (بدون كاميرا)</button>
+        <div class="content" id="admin-content">
+            <h2>Admin Page</h2>
+            <p class="description">This page represents an admin who can view all user camera streams.</p>
+            
+            <div class="video-container" id="adminVideos">
+                <div class="video-wrapper">
+                    <video id="placeholderVideo" autoplay playsinline muted></video>
+                    <div class="video-label">Waiting for connections...</div>
+                </div>
+            </div>
+            
+            <div class="status" id="adminStatus">No active connections</div>
+            
+            <div class="log-container">
+                <div id="adminLog"></div>
+            </div>
         </div>
         
-        <div class="progress-bar" id="progressContainer" style="display: none;">
-            <div class="progress" id="progressBar"></div>
-        </div>
-        
-        <div class="log-container">
-            <div id="log"></div>
+        <div class="firebase-config">
+            <h3>Firebase Configuration</h3>
+            <p>To use this demo, you need to set up a Firebase project and update the configuration below:</p>
+            <ol>
+                <li>Create a Firebase project at <a href="https://console.firebase.google.com/" style="color: #4DB6AC;">Firebase Console</a></li>
+                <li>Enable Firestore Database</li>
+                <li>Update the Firebase configuration in the code with your project details</li>
+            </ol>
         </div>
         
         <div class="warning">
-            <strong>ملاحظة:</strong> هذا الموقع للاستخدام التعليمي فقط. يرجى عدم استخدامه لتسجيل الأشخاص دون موافقتهم.
-        </div>
-        
-        <div class="server-info">
-            <h3>معلومات الرفع إلى الخادم:</h3>
-            <p>سيتم رفع الفيديو إلى: <code>https://api.example.com/upload</code></p>
-            <p>اسم الملف المرسل: <code>video</code></p>
-            <p>صيغة الملف: <code>video/webm</code></p>
-        </div>
-        
-        <div class="solutions">
-            <h3>إصلاح مشكلة "Requested device not found":</h3>
-            <ul>
-                <li>تأكد من أن جهازك يحتوي على كاميرا وميكروفون</li>
-                <li>تحقق من إعدادات الخصوصية في متصفحك للسماح باستخدام الكاميرا</li>
-                <li>جرب متصفحاً مختلفاً مثل Chrome أو Firefox</li>
-                <li>تأكد من عدم استخدام أي تطبيق آخر للكاميرا</li>
-                <li>يمكنك استخدام زر "وضع المحاكاة" للتجربة بدون كاميرا</li>
-            </ul>
+            <strong>Note:</strong> This is a demo for educational purposes. Please ensure you have permission to access cameras and microphones.
         </div>
     </div>
     
     <footer>
-        <p>تم التطوير لأغراض تعليمية - 2023</p>
+        <p>WebRTC with Firebase Signaling Demo - 2023</p>
     </footer>
 
-    <script>
-        const startBtn = document.getElementById('startBtn');
-        const recordBtn = document.getElementById('recordBtn');
-        const simulateBtn = document.getElementById('simulateBtn');
-        const preview = document.getElementById('preview');
-        const placeholder = document.getElementById('placeholder');
-        const log = document.getElementById('log');
-        const status = document.getElementById('status');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        let stream = null;
-        let mediaRecorder = null;
-        let recordedChunks = [];
-        let simulationMode = false;
-
-        function writeLog(message, type = 'info') {
-            const time = new Date().toLocaleTimeString();
-            const className = type === 'error' ? 'error' : 
-                            (type === 'success' ? 'success' : 
-                            (type === 'uploading' ? 'uploading' : 'info'));
-            log.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
-            log.scrollTop = log.scrollHeight;
-        }
-
-        function updateStatus(message) {
-            status.textContent = message;
-        }
-
-        function updateProgress(percent) {
-            progressBar.style.width = percent + '%';
-        }
-
-        // وضع المحاكاة
-        simulateBtn.addEventListener('click', () => {
-            simulationMode = true;
-            startBtn.disabled = true;
-            recordBtn.disabled = false;
-            simulateBtn.disabled = true;
-            simulateBtn.textContent = 'وضع المحاكاة مفعل';
-            
-            placeholder.innerHTML = '<div class="camera-icon">🎬</div><p>وضع المحاكاة مفعل</p>';
-            updateStatus('وضع المحاكاة مفعل - جاهز للتسجيل');
-            writeLog('تم تفعيل وضع المحاكاة بنجاح', 'success');
-            writeLog('يمكنك الآن استخدام زر "تسجيل 5 ثواني ورفع" لتجربة التسجيل', 'info');
+    <!-- Firebase App (core Firebase SDK) -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        
+        // Firebase configuration - Replace with your app's config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const callsCollection = collection(db, "calls");
+        
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-content').classList.add('active');
+            });
         });
-
+        
+        // User Page Functionality
+        const userVideo = document.getElementById('userVideo');
+        const startBtn = document.getElementById('startBtn');
+        const userStatus = document.getElementById('userStatus');
+        const userLog = document.getElementById('userLog');
+        
+        function userWriteLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            userLog.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
+            userLog.scrollTop = userLog.scrollHeight;
+        }
+        
+        function updateUserStatus(message) {
+            userStatus.textContent = message;
+        }
+        
         startBtn.addEventListener('click', async () => {
             try {
-                writeLog('جاري طلب إذن الكاميرا والميكروفون...', 'info');
-                updateStatus('جاري طلب الإذن...');
+                userWriteLog('Requesting camera and microphone access...');
+                updateUserStatus('Requesting camera access...');
                 
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user" // استخدام الكاميرا الأمامية
-                    }, 
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
                     audio: true 
                 });
                 
-                preview.srcObject = stream;
-                preview.style.display = 'block';
-                placeholder.style.display = 'none';
-                recordBtn.disabled = false;
-                startBtn.disabled = true;
-                startBtn.textContent = 'تم التفعيل';
+                userVideo.srcObject = stream;
+                userWriteLog('Camera and microphone access granted');
+                updateUserStatus('Camera sharing started');
                 
-                updateStatus('الكاميرا والميكروفون نشطان');
-                writeLog('تم تفعيل الكاميرا والميكروفون بنجاح', 'success');
-                writeLog('يمكنك الآن رؤية الكاميرا في المعاينة أعلاه', 'info');
-            } catch (err) {
-                updateStatus('فشل في الوصول إلى الكاميرا/الميكروفون');
-                writeLog('خطأ: ' + err.message, 'error');
-                writeLog('يمكنك استخدام زر "وضع المحاكاة" لتجربة الموقع بدون كاميرا', 'info');
-            }
-        });
-
-        recordBtn.addEventListener('click', () => {
-            if (!stream && !simulationMode) {
-                writeLog('لم يتم بدء الكاميرا بعد. يرجى الضغط على "بدء الكاميرا والميكروفون" أولاً.', 'error');
-                return;
-            }
-
-            if (simulationMode) {
-                // محاكاة التسجيل في وضع المحاكاة
-                recordBtn.disabled = true;
-                recordBtn.textContent = 'جاري التسجيل...';
-                updateStatus('جاري التسجيل (5 ثوانٍ)...');
-                writeLog('بدأ التسجيل في وضع المحاكاة...', 'info');
+                // Create peer connection
+                const peerConnection = new RTCPeerConnection();
+                stream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, stream);
+                });
                 
-                // إيقاف التسجيل بعد 5 ثواني
-                setTimeout(() => {
-                    writeLog('تم إيقاف التسجيل.', 'success');
-                    writeLog('حجم الملف: 1024 كيلوبايت (محاكاة)', 'info');
-                    
-                    // محاكاة عملية الرفع
-                    updateStatus('جاري رفع الملف إلى الخادم...');
-                    writeLog('جاري رفع الملف إلى الخادم...', 'uploading');
-                    progressContainer.style.display = 'block';
-                    
-                    // محاكاة شريط التقدم
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                        progress += 5;
-                        updateProgress(progress);
-                        if (progress >= 100) {
-                            clearInterval(interval);
-                            setTimeout(() => {
-                                writeLog('تم رفع الملف إلى الخادم بنجاح (محاكاة)', 'success');
-                                updateStatus('تم الرفع بنجاح - جاهز للتسجيل مرة أخرى');
-                                progressContainer.style.display = 'none';
-                                recordBtn.disabled = false;
-                                recordBtn.textContent = 'تسجيل 5 ثواني ورفع';
-                            }, 500);
+                // Generate offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                userWriteLog('Created WebRTC offer');
+                
+                // Save offer to Firestore
+                const docRef = await addDoc(callsCollection, {
+                    offer: offer,
+                    createdAt: new Date()
+                });
+                
+                userWriteLog(`Offer saved to Firestore with ID: ${docRef.id}`);
+                
+                // Listen for answer
+                onSnapshot(doc(db, "calls", docRef.id), (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const data = docSnapshot.data();
+                        if (data.answer) {
+                            userWriteLog('Received answer from admin');
+                            peerConnection.setRemoteDescription(data.answer)
+                                .then(() => userWriteLog('Remote description set successfully'))
+                                .catch(error => userWriteLog(`Error setting remote description: ${error}`, 'error'));
                         }
-                    }, 100);
-                }, 5000);
-                
-                return;
-            }
-            
-            // إعداد مسجل الوسائط
-            mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'video/webm;codecs=vp9,opus'
-            });
-
-            recordedChunks = [];
-            
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    recordedChunks.push(event.data);
-                }
-            };
-            
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                const fileName = 'recording_' + new Date().toISOString().replace(/:/g, '-') + '.webm';
-                
-                writeLog('تم التسجيل. حجم الملف: ' + (blob.size / 1024).toFixed(1) + ' كيلوبايت', 'success');
-                
-                // رفع الملف إلى الخادم
-                updateStatus('جاري رفع الملف إلى الخادم...');
-                writeLog('جاري رفع الملف إلى الخادم...', 'uploading');
-                progressContainer.style.display = 'block';
-                
-                try {
-                    const formData = new FormData();
-                    formData.append('video', blob, fileName);
-                    
-                    // محاكاة شريط التقدم أثناء الرفع
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                        progress += 5;
-                        updateProgress(progress);
-                        if (progress >= 90) clearInterval(interval); // نتوقف عند 90% لانتظار الاستجابة
-                    }, 100);
-                    
-                    // إرسال الملف إلى الخادم
-                    const response = await fetch('https://api.example.com/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    clearInterval(interval);
-                    updateProgress(100);
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        writeLog('تم رفع الملف إلى الخادم بنجاح', 'success');
-                        writeLog('رد الخادم: ' + JSON.stringify(result), 'info');
-                        updateStatus('تم الرفع بنجاح - جاهز للتسجيل مرة أخرى');
-                    } else {
-                        throw new Error(`فشل الرفع: ${response.status} ${response.statusText}`);
                     }
-                } catch (error) {
-                    writeLog('خطأ في رفع الملف: ' + error.message, 'error');
-                    updateStatus('فشل في رفع الملف');
-                    
-                    // إنشاء رابط تحميل محلي كبديل
-                    const downloadUrl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = fileName;
-                    a.textContent = 'تحميل التسجيل (محلي)';
-                    a.style.color = '#fdbb2d';
-                    a.style.display = 'block';
-                    a.style.marginTop = '10px';
-                    
-                    writeLog('تم إنشاء رابط تحميل محلي بسبب فشل الرفع', 'info');
-                    log.appendChild(a);
-                } finally {
-                    setTimeout(() => {
-                        progressContainer.style.display = 'none';
-                        recordBtn.disabled = false;
-                        recordBtn.textContent = 'تسجيل 5 ثواني ورفع';
-                    }, 1000);
-                }
-            };
-            
-            // بدء التسجيل
-            mediaRecorder.start();
-            recordBtn.disabled = true;
-            recordBtn.textContent = 'جاري التسجيل...';
-            updateStatus('جاري التسجيل (5 ثوانٍ)...');
-            writeLog('بدأ التسجيل...', 'info');
-            
-            // إيقاف التسجيل بعد 5 ثواني
-            setTimeout(() => {
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    mediaRecorder.stop();
-                    writeLog('تم إيقاف التسجيل.', 'success');
-                }
-            }, 5000);
+                });
+                
+                startBtn.disabled = true;
+                startBtn.textContent = 'Sharing Active';
+                
+            } catch (error) {
+                userWriteLog(`Error: ${error.message}`, 'error');
+                updateUserStatus('Error accessing camera');
+            }
         });
-
-        writeLog('تم تحميل الصفحة بنجاح. اضغط على "بدء الكاميرا والميكروفون" لبدء التجربة.', 'info');
-        writeLog('إذا واجهتك مشكلة، يمكنك استخدام زر "وضع المحاكاة" لتجربة الموقع بدون كاميرا.', 'info');
+        
+        // Admin Page Functionality
+        const adminVideos = document.getElementById('adminVideos');
+        const adminStatus = document.getElementById('adminStatus');
+        const adminLog = document.getElementById('adminLog');
+        
+        function adminWriteLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            adminLog.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
+            adminLog.scrollTop = adminLog.scrollHeight;
+        }
+        
+        function updateAdminStatus(message) {
+            adminStatus.textContent = message;
+        }
+        
+        // Listen for new offers in Firestore
+        onSnapshot(callsCollection, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+                    if (data.offer && !data.answer) {
+                        adminWriteLog(`New offer received from user: ${change.doc.id}`);
+                        updateAdminStatus('New connection received');
+                        
+                        // Remove placeholder if it exists
+                        if (document.getElementById('placeholderVideo')) {
+                            adminVideos.innerHTML = '';
+                        }
+                        
+                        // Create a new peer connection
+                        const peerConnection = new RTCPeerConnection();
+                        
+                        // Create video element for this connection
+                        const videoWrapper = document.createElement('div');
+                        videoWrapper.className = 'video-wrapper';
+                        videoWrapper.id = `video-${change.doc.id}`;
+                        
+                        const video = document.createElement('video');
+                        video.autoplay = true;
+                        video.playsInline = true;
+                        video.id = `video-${change.doc.id}`;
+                        
+                        const videoLabel = document.createElement('div');
+                        videoLabel.className = 'video-label';
+                        videoLabel.textContent = `User: ${change.doc.id.substring(0, 8)}`;
+                        
+                        videoWrapper.appendChild(video);
+                        videoWrapper.appendChild(videoLabel);
+                        adminVideos.appendChild(videoWrapper);
+                        
+                        // Handle incoming stream
+                        peerConnection.ontrack = (event) => {
+                            adminWriteLog(`Received stream from user: ${change.doc.id}`);
+                            video.srcObject = event.streams[0];
+                        };
+                        
+                        // Set remote description
+                        await peerConnection.setRemoteDescription(data.offer);
+                        adminWriteLog(`Remote description set for user: ${change.doc.id}`);
+                        
+                        // Create answer
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        
+                        // Save answer to Firestore
+                        await updateDoc(doc(db, "calls", change.doc.id), {
+                            answer: answer
+                        });
+                        
+                        adminWriteLog(`Answer sent to user: ${change.doc.id}`);
+                        updateAdminStatus(`${adminVideos.childElementCount} active connections`);
+                    }
+                }
+            });
+        });
+        
+        adminWriteLog('Admin page loaded. Listening for user connections...');
     </script>
 </body>
 </html>
