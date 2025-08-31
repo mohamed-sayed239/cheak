@@ -1,249 +1,35 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاركة آمنة بين الوالدين والطفل</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .container {
-            max-width: 1000px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        header {
-            margin-bottom: 40px;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        p {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-        
-        .description {
-            max-width: 800px;
-            margin: 0 auto 40px;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
-        
-        .cards {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-top: 30px;
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .card h2 {
-            font-size: 1.8rem;
-            margin-bottom: 15px;
-            color: #ffd700;
-        }
-        
-        .card p {
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(to right, #ff8a00, #ff2070);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .features {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            margin: 40px 0;
-        }
-        
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 300px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .feature h3 {
-            margin-bottom: 10px;
-            color: #4ecdc4;
-        }
-        
-        footer {
-            margin-top: 40px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .cards {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .card {
-                width: 100%;
-            }
-        }
-        
-        .instructions {
-            margin-top: 40px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: right;
-        }
-        
-        .instructions h2 {
-            margin-bottom: 15px;
-            color: #ffd700;
-        }
-        
-        .instructions ol {
-            text-align: right;
-            padding-right: 20px;
-        }
-        
-        .instructions li {
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HACK – اختر الدور</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>مشاركة آمنة بين الوالدين والطفل</h1>
-            <p>منصة تسمح بمشاركة آمنة ومراقبة محتوى الطفل عبر الإنترنت</p>
-        </header>
-        
-        <div class="description">
-            <p>منصتنا تتيح للطفل مشاركة الكاميرا أو الميكروفون أو الشاشة مع والديه بعد موافقته، بينما تمنح الوالدين القدرة على متابعة ومشاهدة ما يشاركه الطفل بطريقة آمنة وسهلة.</p>
-        </div>
-        
-        <div class="cards">
-            <div class="card" onclick="location.href='child.html'">
-                <h2>دخول كطفل</h2>
-                <p>هنا يمكنك مشاركة الكاميرا أو الميكروفون أو الشاشة مع والديك بعد موافقتك</p>
-                <button class="btn">الدخول كطفل</button>
-            </div>
-            
-            <div class="card" onclick="location.href='parent.html'">
-                <h2>دخول كوالد</h2>
-                <p>هنا يمكنك متابعة ومشاهدة ما يشاركه طفلك بطريقة آمنة وسهلة</p>
-                <button class="btn">الدخول كوالد</button>
-            </div>
-        </div>
-        
-        <div class="features">
-            <div class="feature">
-                <h3>أمان تام</h3>
-                <p>نضمن خصوصية وأمان البيانات والمحادثات بين الطفل ووالديه</p>
-            </div>
-            
-            <div class="feature">
-                <h3>سهولة الاستخدام</h3>
-                <p>واجهة مستخدم بسيطة وسهلة الاستخدام للطفل والوالدين</p>
-            </div>
-            
-            <div class="feature">
-                <h3>مشاركة مرنة</h3>
-                <p>إمكانية مشاركة الكاميرا، الميكروفون أو الشاشة كاملة</p>
-            </div>
-        </div>
-        
-        <div class="instructions">
-            <h2>كيفية الاستخدام:</h2>
-            <ol>
-                <li>يقوم الطفل بالدخول إلى صفحة "دخول كطفل"</li>
-                <li></li>يختار نوع المشاركة (كاميرا، ميكروفون أو شاشة)</li>
-                <li>يتم طلب الإذن من الطفل للمشاركة</li>
-                <li>يقوم الوالد بالدخول إلى صفحة "دخول كوالد"</li>
-                <li>يستطيع الوالد رؤية ما يشاركه الطفل في الوقت الحقيقي</li>
-            </ol>
-        </div>
-    </div>
-    
-    <footer>
-        <p>© 2023 مشاركة آمنة بين الوالدين والطفل. جميع الحقوق محفوظة.</p>
-    </footer>
+<div class="container">
+<header>
+<h1>مرحبًا 👋</h1>
+<p>اختر دورك للمتابعة الأسرية الشفافة</p>
+</header>
+
+
+<div class="role-cards">
+<a class="card" href="./parent.html">
+<h2>أنا أب/أم</h2>
+<p>مشاهدة البث المباشر من جهاز الابن</p>
+</a>
+
+
+<a class="card" href="./child.html">
+<h2>أنا ابن/ابنة</h2>
+<p>مشاركة الكاميرا / الميكروفون / الشاشة بموافقتي</p>
+</a>
+</div>
+
+
+<footer class="footnote">يعمل باستخدام Firebase + WebRTC | مشاركة بإذن كل مرة</footer>
+</div>
 </body>
 </html>

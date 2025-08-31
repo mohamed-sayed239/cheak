@@ -1,221 +1,40 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاركة الطفل</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>مشاركة الطفل</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css" />
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="./firebase-config.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>مشاركة الطفل</h1>
-            <p>يمكنك مشاركة الكاميرا أو الميكروفون أو الشاشة مع والديك</p>
-        </header>
+<div class="container">
+<header>
+<h1>مشاركة الطفل</h1>
+<p>اختر ما تريد مشاركته مع والديك (بإذنك)</p>
+</header>
 
-        <div class="controls">
-            <button id="shareCamera" class="btn">مشاركة الكاميرا</button>
-            <button id="shareMicrophone" class="btn">مشاركة الميكروفون</button>
-            <button id="shareScreen" class="btn">مشاركة الشاشة</button>
-            <button id="stopSharing" class="btn stop" disabled>إيقاف المشاركة</button>
-        </div>
 
-        <div class="preview">
-            <video id="localVideo" autoplay muted playsinline></video>
-        </div>
+<div class="controls">
+<button id="shareCamera" class="btn">مشاركة الكاميرا (+ميك)</button>
+<button id="shareMic" class="btn secondary">مشاركة الميكروفون فقط</button>
+<button id="shareScreen" class="btn">مشاركة الشاشة</button>
+<button id="stop" class="btn stop" disabled>إيقاف المشاركة</button>
+</div>
 
-        <div class="status">
-            <p id="statusText">لم تبدأ المشاركة بعد</p>
-        </div>
-    </div>
 
-    <script src="firebase-config.js"></script>
-    <script src="webrtc-handler.js"></script>
-    <script>
-        // تهيئة عناصر التحكم
-        const shareCameraBtn = document.getElementById('shareCamera');
-        const shareMicrophoneBtn = document.getElementById('shareMicrophone');
-        const shareScreenBtn = document.getElementById('shareScreen');
-        const stopSharingBtn = document.getElementById('stopSharing');
-        const localVideo = document.getElementById('localVideo');
-        const statusText = document.getElementById('statusText');
+<div class="video-wrap">
+<video id="localVideo" autoplay muted playsinline></video>
+</div>
 
-        let localStream = null;
-        let peerConnection = null;
 
-        // معالجة مشاركة الكاميرا
-        shareCameraBtn.addEventListener('click', async () => {
-            try {
-                statusText.textContent = 'جاري طلب إذن استخدام الكاميرا...';
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                startSharing(stream, 'كاميرا وميكروفون');
-            } catch (error) {
-                statusText.textContent = 'خطأ في الوصول إلى الكاميرا: ' + error.message;
-            }
-        });
+<div id="status" class="status">لم تبدأ المشاركة بعد</div>
+</div>
 
-        // معالجة مشاركة الميكروفون
-        shareMicrophoneBtn.addEventListener('click', async () => {
-            try {
-                statusText.textContent = 'جاري طلب إذن استخدام الميكروفون...';
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                startSharing(stream, 'ميكروفون فقط');
-            } catch (error) {
-                statusText.textContent = 'خطأ في الوصول إلى الميكروفون: ' + error.message;
-            }
-        });
 
-        // معالجة مشاركة الشاشة
-        shareScreenBtn.addEventListener('click', async () => {
-            try {
-                statusText.textContent = 'جاري طلب إذن مشاركة الشاشة...';
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                startSharing(stream, 'شاشة');
-            } catch (error) {
-                statusText.textContent = 'خطأ في مشاركة الشاشة: ' + error.message;
-            }
-        });
-
-        // إيقاف المشاركة
-        stopSharingBtn.addEventListener('click', stopSharing);
-
-        // بدء المشاركة
-        function startSharing(stream, type) {
-            localStream = stream;
-            localVideo.srcObject = stream;
-            
-            // تعطيل أزرار المشاركة وتفعيل زر الإيقاف
-            shareCameraBtn.disabled = true;
-            shareMicrophoneBtn.disabled = true;
-            shareScreenBtn.disabled = true;
-            stopSharingBtn.disabled = false;
-            
-            statusText.textContent = `جاري مشاركة ${type}...`;
-            
-            // إنشاء اتصال WebRTC
-            createPeerConnection();
-            
-            // إضافة المسارات المحلية إلى الاتصال
-            stream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, stream);
-            });
-            
-            // إنشاء عرض وإرساله
-            createAndSendOffer();
-        }
-
-        // إيقاف المشاركة
-        function stopSharing() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-                localVideo.srcObject = null;
-            }
-            
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            
-            // تفعيل أزرار المشاركة وتعطيل زر الإيقاف
-            shareCameraBtn.disabled = false;
-            shareMicrophoneBtn.disabled = false;
-            shareScreenBtn.disabled = false;
-            stopSharingBtn.disabled = true;
-            
-            statusText.textContent = 'تم إيقاف المشاركة';
-            
-            // مسح البيانات من Firestore
-            db.collection('calls').doc('child-offer').delete();
-            db.collection('calls').doc('child-offer').collection('iceCandidates').get()
-                .then(snapshot => {
-                    snapshot.forEach(doc => doc.ref.delete());
-                });
-        }
-
-        // إنشاء اتصال WebRTC
-        function createPeerConnection() {
-            peerConnection = new RTCPeerConnection({
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            });
-
-            // معالجة مرشحات ICE
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    db.collection('calls').doc('child-offer').collection('iceCandidates').add({
-                        candidate: event.candidate,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-            };
-
-            // الاستماع للاتصال المباشر
-            peerConnection.onconnectionstatechange = () => {
-                statusText.textContent = `حالة الاتصال: ${peerConnection.connectionState}`;
-            };
-        }
-
-        // إنشاء وإرسال العرض
-        async function createAndSendOffer() {
-            try {
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                
-                // حفظ العرض في Firestore
-                await db.collection('calls').doc('child-offer').set({
-                    type: 'offer',
-                    sdp: offer.sdp,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                statusText.textContent = 'تم إرسال العرض، في انتظار الرد...';
-                
-                // الاستماع للإجابة
-                listenForAnswer();
-                
-                // الاستماع لمرشحات ICE من الأب
-                listenForParentIceCandidates();
-                
-            } catch (error) {
-                statusText.textContent = 'خطأ في إنشاء العرض: ' + error.message;
-            }
-        }
-
-        // الاستماع للإجابة من الأب
-        function listenForAnswer() {
-            db.collection('calls').doc('parent-answer')
-                .onSnapshot((snapshot) => {
-                    if (snapshot.exists) {
-                        const data = snapshot.data();
-                        if (data.type === 'answer') {
-                            const answer = new RTCSessionDescription({ type: 'answer', sdp: data.sdp });
-                            peerConnection.setRemoteDescription(answer);
-                            statusText.textContent = 'تم إنشاء الاتصال بنجاح!';
-                        }
-                    }
-                });
-        }
-
-        // الاستماع لمرشحات ICE من الأب
-        function listenForParentIceCandidates() {
-            db.collection('calls').doc('parent-answer').collection('iceCandidates')
-                .onSnapshot((snapshot) => {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === 'added') {
-                            const data = change.doc.data();
-                            peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                        }
-                    });
-                });
-        }
-    </script>
-    <script src="./webrtc-handler.js"></script>
-<script src="./firebase-config.js"></script>
-
+<script src="./child.js"></script>
 </body>
 </html>
