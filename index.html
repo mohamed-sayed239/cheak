@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاركة الكاميرا - الباثر</title>
+    <title>تسجيل الفيديو وإرساله للمشرف</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #6e8efb;
-            --secondary-color: #a777e3;
-            --success-color: #0bd724;
-            --error-color: #d70b0b;
-            --warning-color: #ffa500;
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
         }
         
         * {
@@ -21,14 +24,14 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             margin: 0;
             padding: 20px;
+            color: #333;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            color: #333;
         }
         
         .container {
@@ -36,14 +39,18 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             width: 90%;
-            max-width: 700px;
+            max-width: 800px;
             padding: 30px;
             text-align: center;
         }
         
+        header {
+            margin-bottom: 25px;
+        }
+        
         h1 {
-            color: #4a4a4a;
-            margin-bottom: 20px;
+            color: var(--dark);
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -53,99 +60,19 @@
         p {
             color: #666;
             line-height: 1.6;
-            margin-bottom: 25px;
-        }
-        
-        .permissions {
-            text-align: right;
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            border-right: 4px solid var(--primary-color);
-        }
-        
-        .permission-item {
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-        }
-        
-        .permission-item i {
-            margin-left: 10px;
-            font-size: 20px;
-            color: var(--primary-color);
-        }
-        
-        .btn {
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-            box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(110, 142, 251, 0.6);
-        }
-        
-        .btn.stop {
-            background: linear-gradient(to right, #ff7851, #ff5671);
-        }
-        
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: #e8f4fd;
-            color: #0b5ed7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        .status.error {
-            background-color: #fde8e8;
-            color: var(--error-color);
-        }
-        
-        .status.success {
-            background-color: #e8f8e8;
-            color: var(--success-color);
-        }
-        
-        .status.warning {
-            background-color: #fff4e0;
-            color: var(--warning-color);
+            margin-bottom: 20px;
         }
         
         .video-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        
-        .video-preview {
             width: 100%;
-            max-width: 400px;
-            height: 300px;
+            max-width: 600px;
+            height: 340px;
             background-color: #000;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         
         video {
@@ -166,12 +93,99 @@
             text-align: center;
         }
         
-        .footer {
-            margin-top: 30px;
-            font-size: 14px;
-            color: #888;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
+        .timer {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 15px 0;
+            font-family: monospace;
+            color: var(--dark);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, var(--primary), #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn:disabled {
+            background: linear-gradient(to right, #718096, #a0aec0);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-stop {
+            background: linear-gradient(to right, var(--danger), #c0392b);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, var(--success), #27ae60);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #e8f4fd;
+            color: #0b5ed7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .status.error {
+            background-color: #fde8e8;
+            color: var(--danger);
+        }
+        
+        .status.success {
+            background-color: #e8f8e8;
+            color: var(--success);
+        }
+        
+        .permissions {
+            text-align: right;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border-right: 4px solid var(--primary);
+        }
+        
+        .permission-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .permission-item i {
+            margin-left: 10px;
+            font-size: 20px;
+            color: var(--primary);
         }
         
         .instructions {
@@ -184,7 +198,7 @@
         
         .instructions h3 {
             margin-top: 0;
-            color: var(--primary-color);
+            color: var(--primary);
         }
         
         .instructions ol {
@@ -196,30 +210,24 @@
             margin-bottom: 10px;
         }
         
-        .connection-info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f0f8ff;
-            border-radius: 10px;
-            border-left: 4px solid var(--primary-color);
+        footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
         }
         
-        .connection-info h3 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
+        .admin-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
         }
         
-        .url-box {
-            background: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            margin: 10px 0;
-            direction: ltr;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: center;
-            font-family: monospace;
+        .admin-link:hover {
+            text-decoration: underline;
         }
         
         @media (max-width: 768px) {
@@ -229,29 +237,39 @@
             }
             
             .btn {
-                padding: 12px 24px;
-                font-size: 16px;
+                padding: 12px 20px;
+                font-size: 14px;
             }
             
-            .video-preview {
+            .video-container {
                 height: 250px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-video"></i> نظام مشاركة الكاميرا - الباثر</h1>
-        <p>مرحبًا! هذا التطبيق يسمح لك بمشاركة كاميرتك مع المشاهدين. سيتم طلب إذنك قبل الوصول إلى أي من أجهزتك.</p>
+        <header>
+            <h1><i class="fas fa-video"></i> نظام تسجيل الفيديو وإرساله</h1>
+            <p>سجّل فيديو مع الصوت ثم أرسله إلى المشرف بسهولة</p>
+        </header>
         
         <div class="instructions">
             <h3><i class="fas fa-info-circle"></i> تعليمات الاستخدام:</h3>
             <ol>
-                <li>انقر على زر "بدء المشاركة" للسماح بالوصول إلى الكاميرا والميكروفون</li>
-                <li>انتظر حتى يتم إنشاء الاتصال مع المشاهدين</li>
-                <li>شارك رابط المشاهد مع الشخص الذي تريد أن يرى كاميرتك</li>
-                <li>انقر على "إوقف البث" عندما تنتهي</li>
+                <li>انقر على زر "بدء التسجيل" للسماح بالوصول إلى الكاميرا والميكروفون</li>
+                <li>سجّل الفيديو الذي تريد إرساله</li>
+                <li>اضغط على "إيقاف التسجيل" عندما تنتهي</li>
+                <li>انقر على "إرسال التسجيل" لإرساله إلى المشرف</li>
             </ol>
         </div>
         
@@ -267,36 +285,41 @@
             </div>
         </div>
         
-        <button id="startBtn" class="btn">
-            <i class="fas fa-play-circle"></i> بدء المشاركة
-        </button>
-        
         <div class="video-container">
-            <div id="videoPreview" class="video-preview" style="display: none;">
-                <video id="localVideo" autoplay muted playsinline></video>
-                <div class="video-overlay">الكاميرا الخاصة بك</div>
-            </div>
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="video-overlay">الكاميرا الخاصة بك</div>
         </div>
         
-        <div id="status" class="status" style="display: none;">
-            <i class="fas fa-sync fa-spin"></i> جاري الاتصال بالمشاهدين...
+        <div class="timer" id="timer">00:00:00</div>
+        
+        <div id="status" class="status">
+            <i class="fas fa-info-circle"></i> جاهز للبدء
         </div>
         
-        <div id="connectionInfo" class="connection-info" style="display: none;">
-            <h3><i class="fas fa-link"></i> رابط المشاهدة:</h3>
-            <div class="url-box" id="viewerUrl"></div>
-            <p>شارك هذا الرابط مع الشخص الذي تريد أن يرى كاميرتك</p>
+        <div class="controls">
+            <button id="startBtn" class="btn">
+                <i class="fas fa-record-vinyl"></i> بدء التسجيل
+            </button>
+            <button id="stopBtn" class="btn btn-stop" disabled>
+                <i class="fas fa-stop"></i> إيقاف التسجيل
+            </button>
+            <button id="sendBtn" class="btn btn-success" disabled>
+                <i class="fas fa-paper-plane"></i> إرسال التسجيل
+            </button>
         </div>
         
-        <div class="footer">
-            <p><i class="fas fa-shield-alt"></i> يتم نقل الفيديو مباشرة بتقنية Peer-to-Peer ولا يتم تسجيله أو تخزينه على الخوادم.</p>
-        </div>
+        <footer>
+            <p><i class="fas fa-shield-alt"></i> يتم حفظ التسجيلات مؤقتًا حتى تقوم بإرسالها إلى المشرف.</p>
+            <a href="admin.html" class="admin-link">الانتقال إلى صفحة المشرف</a>
+        </footer>
     </div>
 
     <!-- Firebase App (core Firebase SDK) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <!-- Firebase Firestore -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
     <script>
         // Firebase configuration
@@ -313,180 +336,166 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const storage = firebase.storage();
         
         // Elements
         const startBtn = document.getElementById('startBtn');
-        const videoPreview = document.getElementById('videoPreview');
+        const stopBtn = document.getElementById('stopBtn');
+        const sendBtn = document.getElementById('sendBtn');
         const localVideo = document.getElementById('localVideo');
         const status = document.getElementById('status');
-        const connectionInfo = document.getElementById('connectionInfo');
-        const viewerUrl = document.getElementById('viewerUrl');
+        const timer = document.getElementById('timer');
         
+        let mediaRecorder;
+        let recordedChunks = [];
+        let recordedBlob = null;
+        let recordingStartTime;
+        let timerInterval;
         let localStream;
-        let peerConnection;
-        let addedViewerCandidates = new Set();
-        let isBroadcasting = false;
         
-        // Server configuration (for ICE candidates)
-        const servers = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-        
-        // Generate viewer URL
-        function generateViewerUrl() {
-            const currentUrl = window.location.href;
-            return currentUrl.replace('broadcaster', 'viewer') || currentUrl.replace('index', 'viewer');
-        }
-        
-        // Start sharing when button is clicked
-        startBtn.addEventListener('click', async () => {
-            if (isBroadcasting) {
-                // Stop broadcasting
-                stopBroadcasting();
-            } else {
-                // Start broadcasting
-                try {
-                    // Request camera and microphone access
-                    localStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: true, 
-                        audio: true 
-                    });
-                    
-                    // Display local video preview
-                    localVideo.srcObject = localStream;
-                    videoPreview.style.display = 'block';
-                    
-                    // Change button and show status
-                    startBtn.innerHTML = '<i class="fas fa-stop-circle"></i> إيقاف البث';
-                    startBtn.classList.add('stop');
-                    status.style.display = 'flex';
-                    isBroadcasting = true;
-                    
-                    // Show viewer URL
-                    viewerUrl.textContent = generateViewerUrl();
-                    connectionInfo.style.display = 'block';
-                    
-                    // Initialize WebRTC
-                    await createPeerConnection();
-                    await createOffer();
-                    
-                } catch (error) {
-                    console.error('Error accessing media devices:', error);
-                    status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في الوصول إلى الكاميرا أو الميكروفون. يرجى التحقق من الأذونات.';
-                    status.classList.add('error');
-                }
-            }
-        });
-        
-        // Stop broadcasting function
-        function stopBroadcasting() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            
-            if (peerConnection) {
-                peerConnection.close();
-            }
-            
-            // Reset UI
-            startBtn.innerHTML = '<i class="fas fa-play-circle"></i> بدء المشاركة';
-            startBtn.classList.remove('stop');
-            videoPreview.style.display = 'none';
-            status.style.display = 'none';
-            status.classList.remove('error', 'success');
-            connectionInfo.style.display = 'none';
-            isBroadcasting = false;
-            
-            // Clear Firestore data
-            db.collection('cameraConnections').doc('broadcaster').delete();
-            addedViewerCandidates.clear();
-            
-            console.log("تم إيقاف البث");
-        }
-        
-        // Create peer connection
-        async function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(servers);
-            
-            // Add local stream to connection
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-            
-            // Listen for ICE candidates and add them to Firestore
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    // Convert candidate to JSON before storing
-                    const candidateData = event.candidate.toJSON();
-                    
-                    db.collection('cameraConnections').doc('broadcaster').set({
-                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(candidateData)
-                    }, { merge: true });
-                }
-            };
-            
-            // Listen for remote stream
-            peerConnection.ontrack = (event) => {
-                console.log("تم استقبال تيار من المشاهد");
-            };
-            
-            // Listen for ICE candidates from viewer
-            db.collection('cameraConnections').doc('viewer')
-                .onSnapshot((doc) => {
-                    const data = doc.data();
-                    if (data && data.iceCandidates) {
-                        data.iceCandidates.forEach(candidate => {
-                            const candidateString = JSON.stringify(candidate);
-                            if (!addedViewerCandidates.has(candidateString)) {
-                                addedViewerCandidates.add(candidateString);
-                                // Rebuild the ICE candidate
-                                peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-                            }
-                        });
-                    }
+        // Initialize camera
+        async function initCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }, 
+                    audio: true 
                 });
                 
-            // Listen for answer from viewer
-            db.collection('cameraConnections').doc('viewerAnswer')
-                .onSnapshot(async (doc) => {
-                    const data = doc.data();
-                    if (data && data.answer) {
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                        status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بالمشاهدين بنجاح!';
-                        status.classList.add('success');
-                    }
-                });
+                localVideo.srcObject = localStream;
+                status.innerHTML = '<i class="fas fa-check-circle"></i> الكاميرا والمايكروفون جاهزان';
+                startBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في الوصول إلى الكاميرا أو الميكروفون. يرجى التحقق من الأذونات.';
+                status.classList.add('error');
+            }
         }
         
-        // Create offer and add it to Firestore
-        async function createOffer() {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
+        // Start recording
+        function startRecording() {
+            recordedChunks = [];
             
-            // Convert offer to JSON before storing
-            const offerData = {
-                type: offer.type,
-                sdp: offer.sdp
-            };
-            
-            // Clear any existing data and set new offer
-            await db.collection('cameraConnections').doc('broadcaster').set({
-                offer: offerData,
-                iceCandidates: []
+            // Setup media recorder
+            mediaRecorder = new MediaRecorder(localStream, {
+                mimeType: 'video/webm;codecs=vp9,opus'
             });
             
-            console.log("تم إنشاء العرض وإرساله إلى Firebase");
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                
+                // Enable send button
+                sendBtn.disabled = false;
+                
+                status.innerHTML = '<i class="fas fa-check-circle"></i> انتهى التسجيل، يمكنك الآن الإرسال';
+                status.classList.add('success');
+                
+                // Stop timer
+                clearInterval(timerInterval);
+            };
+            
+            // Start recording
+            mediaRecorder.start();
+            recordingStartTime = new Date();
+            
+            // Start timer
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            // Update UI
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            sendBtn.disabled = true;
+            
+            status.innerHTML = '<i class="fas fa-sync fa-spin"></i> جاري التسجيل...';
         }
         
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            if (isBroadcasting) {
-                stopBroadcasting();
+        // Stop recording
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
             }
-        });
+        }
+        
+        // Send recording to admin
+        async function sendRecording() {
+            if (!recordedBlob) return;
+            
+            status.innerHTML = '<i class="fas fa-sync fa-spin"></i> جاري الإرسال...';
+            sendBtn.disabled = true;
+            
+            try {
+                // Generate unique filename
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `recording-${timestamp}.webm`;
+                
+                // Create storage reference
+                const storageRef = storage.ref();
+                const recordingRef = storageRef.child(`recordings/${filename}`);
+                
+                // Upload recording
+                await recordingRef.put(recordedBlob);
+                
+                // Get download URL
+                const downloadURL = await recordingRef.getDownloadURL();
+                
+                // Save recording info to Firestore
+                await db.collection('recordings').add({
+                    filename: filename,
+                    downloadURL: downloadURL,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'new'
+                });
+                
+                status.innerHTML = '<i class="fas fa-check-circle"></i> تم إرسال التسجيل بنجاح!';
+                status.classList.add('success');
+                
+                // Reset for new recording
+                sendBtn.disabled = true;
+                recordedBlob = null;
+                
+                // Reset timer
+                timer.textContent = '00:00:00';
+                
+            } catch (error) {
+                console.error('Error uploading recording:', error);
+                status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في إرسال التسجيل. يرجى المحاولة مرة أخرى.';
+                status.classList.add('error');
+                sendBtn.disabled = false;
+            }
+        }
+        
+        // Update timer
+        function updateTimer() {
+            const now = new Date();
+            const diff = now - recordingStartTime;
+            
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            timer.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+        sendBtn.addEventListener('click', sendRecording);
+        
+        // Initialize app
+        initCamera();
     </script>
 </body>
 </html>
