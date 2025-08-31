@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الأب</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>لوحة تحكم الأب</h1>
+            <p>مشاهدة البث المباشر من جهاز الطفل</p>
+        </header>
+
+        <div class="video-container">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div id="waitingMessage" class="waiting-message">
+                <p>في انتظار مشاركة من الابن</p>
+            </div>
+        </div>
+
+        <div class="status">
+            <p id="statusText">جاري الانتظار للاتصال...</p>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        // تهيئة العناصر
+        const remoteVideo = document.getElementById('remoteVideo');
+        const waitingMessage = document.getElementById('waitingMessage');
+        const statusText = document.getElementById('statusText');
+
+        let peerConnection = null;
+
+        // تهيئة اتصال WebRTC
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            });
+
+            // معالجة تدفق الفيديو الوارد
+            peerConnection.ontrack = (event) => {
+                if (event.streams && event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                    waitingMessage.style.display = 'none';
+                    statusText.textContent = 'متصل - بث مباشر';
+                }
+            };
+
+            // معالجة مرشحات ICE
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    db.collection('calls').doc('parent-answer').collection('iceCandidates').add({
+                        candidate: event.candidate,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            };
+
+            // معالجة تغيير حالة الاتصال
+            peerConnection.onconnectionstatechange = () => {
+                statusText.textContent = `حالة الاتصال: ${peerConnection.connectionState}`;
+                if (peerConnection.connectionState === 'disconnected' || 
+                    peerConnection.connectionState === 'failed') {
+                    waitingMessage.style.display = 'flex';
+                }
+            };
+        }
+
+        // الاستماع للعرض من الطفل
+        function listenForOffer() {
+            db.collection('calls').doc('child-offer')
+                .onSnapshot(async (snapshot) => {
+                    if (snapshot.exists) {
+                        const data = snapshot.data();
+                        if (data.type === 'offer') {
+                            waitingMessage.style.display = 'none';
+                            statusText.textContent = 'تم استقبال عرض اتصال، جاري المعالجة...';
+                            
+                            if (!peerConnection) {
+                                createPeerConnection();
+                            }
+                            
+                            const offer = new RTCSessionDescription({ type: 'offer', sdp: data.sdp });
+                            await peerConnection.setRemoteDescription(offer);
+                            
+                            // إنشاء الإجابة
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+                            
+                            // حفظ الإجابة في Firestore
+                            await db.collection('calls').doc('parent-answer').set({
+                                type: 'answer',
+                                sdp: answer.sdp,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            statusText.textContent = 'تم إرسال الإجابة، جاري إنشاء الاتصال...';
+                            
+                            // الاستماع لمرشحات ICE من الطفل
+                            listenForChildIceCandidates();
+                        }
+                    } else {
+                        // إذا لم يكن هناك عرض، تأكد من إظهار رسالة الانتظار
+                        waitingMessage.style.display = 'flex';
+                        statusText.textContent = 'في انتظار مشاركة من الابن';
+                    }
+                });
+        }
+
+        // الاستماع لمرشحات ICE من الطفل
+        function listenForChildIceCandidates() {
+            db.collection('calls').doc('child-offer').collection('iceCandidates')
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach(async (change) => {
+                        if (change.type === 'added') {
+                            const data = change.doc.data();
+                            try {
+                                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                            } catch (error) {
+                                console.error('Error adding ICE candidate:', error);
+                            }
+                        }
+                    });
+                });
+        }
+
+        // بدء الاستماع للعروض عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            listenForOffer();
+        });
+    </script>
+</body>
+</html>
