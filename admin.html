@@ -328,7 +328,8 @@
             </div>
             
             <div class="video-container">
-                <video id="remoteVideo" autoplay playsinline></video>
+                <!-- إضافة السمة muted هنا لحل مشكلة التشغيل التلقائي -->
+                <video id="remoteVideo" autoplay playsinline muted></video>
                 <div id="noSignal" class="no-signal">
                     <i class="fas fa-satellite-dish fa-3x"></i>
                     <p>لا يوجد بث نشط حالياً</p>
@@ -453,8 +454,10 @@
         let addedCandidates = new Set();
         let statsInterval;
         let isViewing = false;
-        let isMuted = false;
+        let isMuted = true; // تم التعيين على true لأن الفيديو muted افتراضيًا
         let trackCheckInterval;
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
         
         // Server configuration (for ICE candidates)
         const servers = {
@@ -519,7 +522,7 @@
         
         pauseBtn.addEventListener('click', () => {
             remoteVideo.pause();
-            logDebug('تم إوقف الفيديو مؤقتاً');
+            logDebug('تم إيقاف الفيديو مؤقتاً');
         });
         
         muteBtn.addEventListener('click', () => {
@@ -544,7 +547,6 @@
         qualitySelect.addEventListener('change', () => {
             if (isViewing) {
                 logDebug(`تم تغيير جودة البث إلى: ${qualitySelect.value}`);
-                // يمكن إضافة منطق لتغيير جودة البث هنا
                 streamQuality.textContent = qualitySelect.value;
             }
         });
@@ -572,16 +574,31 @@
                     
                     logDebug('تم العثور على دفق عن بعد، إعداد عنصر الفيديو');
                     remoteVideo.srcObject = remoteStream;
-                    remoteVideo.muted = true; // حل مشكلة autoplay
                     
-                    // محاولة التشغيل التلقائي مع التعامل مع الأخطاء
-                    remoteVideo.play().then(() => {
-                        logDebug('✅ تم تشغيل الفيديو تلقائياً');
-                        autoplayMessage.style.display = 'none';
-                    }).catch(e => {
-                        logDebug("⚠️ فشل تشغيل الفيديو: " + e.message);
-                        autoplayMessage.style.display = 'block';
-                    });
+                    // محاولة التشغيل التلقائي مع التعامل مع الأخطاء وإعادة المحاولة
+                    const tryPlay = () => {
+                        remoteVideo.play().then(() => {
+                            logDebug('✅ تم تشغيل الفيديو تلقائياً');
+                            autoplayMessage.style.display = 'none';
+                            retryCount = 0;
+                        }).catch(e => {
+                            logDebug("⚠️ فشل تشغيل الفيديو: " + e.message);
+                            autoplayMessage.style.display = 'block';
+                            
+                            // إعادة المحاولة بعد ثانية (بحد أقصى 3 محاولات)
+                            if (retryCount < MAX_RETRIES) {
+                                retryCount++;
+                                setTimeout(() => {
+                                    logDebug(`🔄 المحاولة ${retryCount} من ${MAX_RETRIES}`);
+                                    tryPlay();
+                                }, 1000);
+                            } else {
+                                logDebug("❌ توقف عن إعادة المحاولة بعد فشل جميع المحاولات");
+                            }
+                        });
+                    };
+                    
+                    tryPlay();
                     
                     noSignal.style.display = 'none';
                     status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بنجاح';
@@ -751,6 +768,7 @@
             startViewingBtn.disabled = false;
             stopViewingBtn.disabled = true;
             isViewing = false;
+            retryCount = 0;
             
             if (durationInterval) {
                 clearInterval(durationInterval);
