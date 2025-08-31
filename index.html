@@ -103,12 +103,6 @@
             overflow: hidden;
             background: #000;
             border: 3px solid #fdbb2d;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .video-wrapper:hover {
-            transform: scale(1.05);
         }
         
         video {
@@ -127,27 +121,6 @@
             padding: 5px;
             text-align: center;
             font-size: 14px;
-        }
-        
-        .video-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 5px;
-        }
-        
-        .control-btn {
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
         }
         
         .controls {
@@ -307,6 +280,22 @@
             color: #9C27B0;
             font-weight: bold;
         }
+        
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        .connected {
+            background-color: #4CAF50;
+        }
+        
+        .disconnected {
+            background-color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -447,7 +436,7 @@
                 document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
                 
                 tab.classList.add('active');
-                document.getElementById(tab.dataset.tab + '-content').classlassList.add('active');
+                document.getElementById(tab.dataset.tab + '-content').classList.add('active');
             });
         });
         
@@ -484,11 +473,22 @@
                 userWriteLog('تم منح إذن استخدام الكاميرا والميكروفون');
                 updateUserStatus('بدأ بث الكاميرا');
                 
-                // إنشاء اتصال نظير
+                // إنشاء اتصال نظير مع خوادم STUN/TURN
                 const peerConnection = new RTCPeerConnection({
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
                     ]
                 });
                 
@@ -517,6 +517,14 @@
                     if (event.candidate) {
                         userWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
                         addDoc(offerCandidates, event.candidate.toJSON());
+                    }
+                };
+                
+                // مراقبة حالة الاتصال
+                peerConnection.onconnectionstatechange = () => {
+                    userWriteLog(`حالة الاتصال: ${peerConnection.connectionState}`);
+                    if (peerConnection.connectionState === 'connected') {
+                        updateUserStatus('متصل بنجاح مع المدير');
                     }
                 };
                 
@@ -593,11 +601,22 @@
                             adminVideos.innerHTML = '';
                         }
                         
-                        // إنشاء اتصال نظير جديد
+                        // إنشاء اتصال نظير جديد مع خوادم STUN/TURN
                         const peerConnection = new RTCPeerConnection({
                             iceServers: [
                                 { urls: 'stun:stun.l.google.com:19302' },
-                                { urls: 'stun:stun1.l.google.com:19302' }
+                                { urls: 'stun:stun1.l.google.com:19302' },
+                                { urls: 'stun:stun2.l.google.com:19302' },
+                                {
+                                    urls: 'turn:openrelay.metered.ca:80',
+                                    username: 'openrelayproject',
+                                    credential: 'openrelayproject'
+                                },
+                                {
+                                    urls: 'turn:openrelay.metered.ca:443',
+                                    username: 'openrelayproject',
+                                    credential: 'openrelayproject'
+                                }
                             ]
                         });
                         
@@ -609,47 +628,36 @@
                         const video = document.createElement('video');
                         video.autoplay = true;
                         video.playsInline = true;
-                        video.muted = true; // إضافة muted=true لإصلاح المشكلة
+                        video.muted = true; // مهم لضمان تشغيل الفيديو
                         video.id = `video-${change.doc.id}`;
                         
                         const videoLabel = document.createElement('div');
                         videoLabel.className = 'video-label';
                         videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
                         
-                        // إضافة زر لإلغاء كتم الصوت
-                        const unmuteBtn = document.createElement('button');
-                        unmuteBtn.className = 'control-btn';
-                        unmuteBtn.innerHTML = '🔇';
-                        unmuteBtn.title = 'إلغاء كتم الصوت';
-                        
-                        const videoControls = document.createElement('div');
-                        videoControls.className = 'video-controls';
-                        videoControls.appendChild(unmuteBtn);
-                        
                         videoWrapper.appendChild(video);
                         videoWrapper.appendChild(videoLabel);
-                        videoWrapper.appendChild(videoControls);
                         adminVideos.appendChild(videoWrapper);
-                        
-                        // إلغاء كتم الصوت عند النقر
-                        unmuteBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            video.muted = !video.muted;
-                            unmuteBtn.innerHTML = video.muted ? '🔇' : '🔊';
-                            unmuteBtn.title = video.muted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
-                        });
-                        
-                        // إلغاء كتم الصوت عند النقر على الفيديو
-                        videoWrapper.addEventListener('click', () => {
-                            video.muted = !video.muted;
-                            unmuteBtn.innerHTML = video.muted ? '🔇' : '🔊';
-                            unmuteBtn.title = video.muted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
-                        });
                         
                         // التعامل مع البث الوارد
                         peerConnection.ontrack = (event) => {
                             adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
                             video.srcObject = event.streams[0];
+                            
+                            // إضافة زر لإلغاء كتم الصوت
+                            const unmuteBtn = document.createElement('button');
+                            unmuteBtn.textContent = '🔇 إلغاء كتم الصوت';
+                            unmuteBtn.style.cssText = 'position:absolute; top:10px; right:10px; padding:5px; background:rgba(0,0,0,0.5); color:white; border:none; border-radius:5px; cursor:pointer;';
+                            unmuteBtn.onclick = () => {
+                                video.muted = !video.muted;
+                                unmuteBtn.textContent = video.muted ? '🔇 إلغاء كتم الصوت' : '🔊 كتم الصوت';
+                            };
+                            videoWrapper.appendChild(unmuteBtn);
+                        };
+                        
+                        // مراقبة حالة الاتصال
+                        peerConnection.onconnectionstatechange = () => {
+                            adminWriteLog(`حالة الاتصال مع ${change.doc.id.substring(0, 8)}: ${peerConnection.connectionState}`);
                         };
                         
                         // حفظ مرشحي ICE من المدير
