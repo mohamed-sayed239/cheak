@@ -1,4 +1,4 @@
-// webrtc-handler.js - معالج اتصالات WebRTC للتطبيق
+// webrtc-handler.js - معالج اتصالات WebRTC مع تحسينات تخزين ICE Candidates
 
 // تهيئة Firebase
 const firebaseConfig = {
@@ -20,6 +20,7 @@ let peerConnection = null;
 let localStream = null;
 let remoteStream = null;
 let isCaller = false;
+let callDoc = null;
 
 // تكوين ICE Servers لـ WebRTC
 const iceServers = {
@@ -54,24 +55,27 @@ function createPeerConnection() {
     }
 }
 
-// معالج مرشحات ICE
-function handleICECandidateEvent(event) {
+// معالج مرشحات ICE - محسن لتخزين JSON
+async function handleICECandidateEvent(event) {
     if (event.candidate) {
         console.log('تم إنشاء مرشح ICE جديد:', event.candidate);
         
-        // حفظ مرشح ICE في Firestore
-        const candidateData = {
-            type: 'candidate',
-            candidate: event.candidate,
-            sdpMid: event.candidate.sdpMid,
-            sdpMLineIndex: event.candidate.sdpMLineIndex,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        const collectionName = isCaller ? 'offerCandidates' : 'answerCandidates';
-        db.collection('calls').doc('currentCall').collection(collectionName).add(candidateData)
-            .then(() => console.log('تم إرسال مرشح ICE بنجاح'))
-            .catch(error => console.error('خطأ في إرسال مرشح ICE:', error));
+        try {
+            // تحويل الـ ICE Candidate إلى JSON لتخزينه في Firestore
+            const candidateData = {
+                candidate: event.candidate.toJSON(), // ✅ تحويل للـ JSON
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            // تحديد المجموعة المناسبة بناءً على الدور
+            const collectionName = isCaller ? 'offerCandidates' : 'answerCandidates';
+            
+            // إضافة المرشح إلى المجموعة المناسبة
+            await db.collection('calls').doc('currentCall').collection(collectionName).add(candidateData);
+            console.log('تم إرسال مرشح ICE بنجاح إلى', collectionName);
+        } catch (error) {
+            console.error('خطأ في إرسال مرشح ICE:', error);
+        }
     }
 }
 
@@ -237,7 +241,7 @@ async function listenForOfferAndCreateAnswer() {
         });
 }
 
-// الاستماع لمرشحات ICE من الطرف الآخر
+// الاستماع لمرشحات ICE من الطرف الآخر - محسن لاستقبال JSON
 function listenForRemoteCandidates(collectionName) {
     db.collection('calls').doc('currentCall').collection(collectionName)
         .onSnapshot(snapshot => {
@@ -246,6 +250,7 @@ function listenForRemoteCandidates(collectionName) {
                     const data = change.doc.data();
                     
                     try {
+                        // ✅ تحويل JSON المرسل إلى RTCIceCandidate object
                         await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
                         console.log('تم إضافة مرشح ICE من الطرف الآخر:', data.candidate);
                     } catch (error) {
