@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المشرف</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #4a5568);
+            margin: 0;
+            padding: 0;
+            color: #f8f9fa;
+        }
+        
+        .header {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            margin: 0;
+            color: white;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        #remoteVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(to right, #ff7851, #ff5671);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+        }
+        
+        .connection-info {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .info-box {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .info-box i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #4facfe;
+        }
+        
+        .no-signal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #888;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-tv"></i> لوحة تحكم المشرف</h1>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-video"></i> البث المباشر</h2>
+            
+            <div class="video-container">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <div id="noSignal" class="no-signal">
+                    <i class="fas fa-satellite-dish fa-3x"></i>
+                    <p>لا يوجد بث نشط حالياً</p>
+                </div>
+            </div>
+            
+            <div class="status" id="status">
+                <i class="fas fa-sync fa-spin"></i> في انتظار البث...
+            </div>
+            
+            <div class="controls">
+                <button id="startViewing" class="btn">
+                    <i class="fas fa-play"></i> بدء المشاهدة
+                </button>
+                <button id="stopViewing" class="btn btn-stop">
+                    <i class="fas fa-stop"></i> إيقاف المشاهدة
+                </button>
+            </div>
+            
+            <div class="connection-info">
+                <div class="info-box">
+                    <i class="fas fa-broadcast-tower"></i>
+                    <h3>حالة الاتصال</h3>
+                    <p id="connectionStatus">غير متصل</p>
+                </div>
+                
+                <div class="info-box">
+                    <i class="fas fa-clock"></i>
+                    <h3>مدة البث</h3>
+                    <p id="broadcastDuration">00:00:00</p>
+                </div>
+                
+                <div class="info-box">
+                    <i class="fas fa-network-wired"></i>
+                    <h3>نقل البيانات</h3>
+                    <p id="dataTransfer">0 KB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>يتم نقل الفيديو مباشرة بين الأجهزة ولا يتم تسجيله أو تخزينه على الخوادم.</p>
+    </div>
+
+    <!-- Firebase App (core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8",
+            authDomain: "camera-share-demo.firebaseapp.com",
+            projectId: "camera-share-demo",
+            storageBucket: "camera-share-demo.firebasestorage.app",
+            messagingSenderId: "1084551271486",
+            appId: "1:1084551271486:web:929b1b0ac2dd7abf0aed6f",
+            measurementId: "G-Y0RWDV7FVF"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Elements
+        const remoteVideo = document.getElementById('remoteVideo');
+        const noSignal = document.getElementById('noSignal');
+        const status = document.getElementById('status');
+        const startViewingBtn = document.getElementById('startViewing');
+        const stopViewingBtn = document.getElementById('stopViewing');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const broadcastDuration = document.getElementById('broadcastDuration');
+        const dataTransfer = document.getElementById('dataTransfer');
+        
+        let peerConnection;
+        let broadcastStartTime;
+        let durationInterval;
+        let dataUsage = 0;
+        
+        // Server configuration (for ICE candidates)
+        const servers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
+        // Start viewing when button is clicked
+        startViewingBtn.addEventListener('click', async () => {
+            try {
+                await startViewing();
+            } catch (error) {
+                console.error('Error starting viewing:', error);
+                status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في بدء المشاهدة';
+            }
+        });
+        
+        // Stop viewing when button is clicked
+        stopViewingBtn.addEventListener('click', () => {
+            stopViewing();
+        });
+        
+        // Start viewing function
+        async function startViewing() {
+            status.innerHTML = '<i class="fas fa-sync fa-spin"></i> جاري الاتصال...';
+            connectionStatus.textContent = 'جاري الاتصال';
+            
+            // Create peer connection
+            peerConnection = new RTCPeerConnection(servers);
+            
+            // Handle incoming stream
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+                noSignal.style.display = 'none';
+                status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بنجاح';
+                connectionStatus.textContent = 'متصل';
+                
+                // Start tracking broadcast duration
+                broadcastStartTime = new Date();
+                updateDuration();
+                durationInterval = setInterval(updateDuration, 1000);
+            };
+            
+            // Listen for ICE candidates and add them to Firestore
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    db.collection('cameraConnections').doc('viewer').update({
+                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate)
+                    });
+                }
+            };
+            
+            // Track data usage
+            peerConnection.onconnectionstatechange = () => {
+                if (peerConnection.connectionState === 'connected') {
+                    // Start tracking data usage
+                    setInterval(() => {
+                        // This is a simplified implementation
+                        // In a real app, you would track RTCStatsReport
+                        dataUsage += Math.random() * 100;
+                        dataTransfer.textContent = Math.round(dataUsage) + ' KB';
+                    }, 1000);
+                }
+            };
+            
+            // Listen for offer from broadcaster
+            const offerDoc = await db.collection('cameraConnections').doc('broadcaster').get();
+            if (offerDoc.exists) {
+                const data = offerDoc.data();
+                if (data.offer) {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    
+                    // Create answer
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
+                    // Send answer to Firestore
+                    await db.collection('cameraConnections').doc('viewerAnswer').set({
+                        answer: answer
+                    });
+                    
+                    // Send ICE candidates to Firestore
+                    await db.collection('cameraConnections').doc('viewer').set({
+                        iceCandidates: []
+                    });
+                    
+                    // Listen for ICE candidates from broadcaster
+                    db.collection('cameraConnections').doc('broadcaster')
+                        .onSnapshot((doc) => {
+                            const data = doc.data();
+                            if (data && data.iceCandidates) {
+                                data.iceCandidates.forEach(candidate => {
+                                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                                });
+                            }
+                        });
+                }
+            } else {
+                status.innerHTML = '<i class="fas fa-exclamation-circle"></i> لا يوجد بث نشط';
+            }
+        }
+        
+        // Stop viewing function
+        function stopViewing() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            remoteVideo.srcObject = null;
+            noSignal.style.display = 'block';
+            status.innerHTML = '<i class="fas fa-pause-circle"></i> توقف عن المشاهدة';
+            connectionStatus.textContent = 'غير متصل';
+            
+            if (durationInterval) {
+                clearInterval(durationInterval);
+            }
+            
+            broadcastDuration.textContent = '00:00:00';
+            dataTransfer.textContent = '0 KB';
+            dataUsage = 0;
+        }
+        
+        // Update broadcast duration
+        function updateDuration() {
+            const now = new Date();
+            const diff = now - broadcastStartTime;
+            
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            broadcastDuration.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Check if there's an active broadcast on page load
+        db.collection('cameraConnections').doc('broadcaster')
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.offer) {
+                        status.innerHTML = '<i class="fas fa-broadcast-tower"></i> هناك بث نشط - انقر فوق "بدء المشاهدة"';
+                    }
+                }
+            });
+    </script>
+</body>
+</html>

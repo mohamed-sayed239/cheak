@@ -1,35 +1,274 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HACK – اختر الدور</title>
-<link rel="icon" href="data:,">
-<link rel="stylesheet" href="./style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشاركة الكاميرا</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #4a4a4a;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .permissions {
+            text-align: right;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border-right: 4px solid #6e8efb;
+        }
+        
+        .permission-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .permission-item i {
+            margin-left: 10px;
+            font-size: 20px;
+            color: #6e8efb;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(110, 142, 251, 0.6);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #e8f4fd;
+            color: #0b5ed7;
+            display: none;
+        }
+        
+        .video-preview {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background-color: #000;
+            margin: 20px auto;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-<div class="container">
-<header>
-<h1>مرحبًا 👋</h1>
-<p>اختر دورك للمتابعة الأسرية الشفافة</p>
-</header>
+    <div class="container">
+        <h1><i class="fas fa-video"></i> مشاركة الكاميرا</h1>
+        <p>مرحبًا! هذا التطبيق يسمح لك بمشاركة كاميرتك مع المشرف. سيتم طلب إذنك قبل الوصول إلى أي من أجهزتك.</p>
+        
+        <div class="permissions">
+            <h3>الأذونات المطلوبة:</h3>
+            <div class="permission-item">
+                <span>الوصول إلى الكاميرا</span>
+                <i class="fas fa-camera"></i>
+            </div>
+            <div class="permission-item">
+                <span>الوصول إلى الميكروفون</span>
+                <i class="fas fa-microphone"></i>
+            </div>
+        </div>
+        
+        <button id="startBtn" class="btn">
+            <i class="fas fa-play-circle"></i> بدء المشاركة
+        </button>
+        
+        <div id="videoPreview" class="video-preview"></div>
+        
+        <div id="status" class="status">
+            <i class="fas fa-sync fa-spin"></i> جاري الاتصال بالمشرف...
+        </div>
+        
+        <div class="footer">
+            <p>يتم نقل الفيديو مباشرة ولا يتم تسجيله أو تخزينه على الخوادم.</p>
+        </div>
+    </div>
 
+    <!-- Firebase App (core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-<div class="role-cards">
-<a class="card" href="./parent.html">
-<h2>أنا أب/أم</h2>
-<p>مشاهدة البث المباشر من جهاز الابن</p>
-</a>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8",
+            authDomain: "camera-share-demo.firebaseapp.com",
+            projectId: "camera-share-demo",
+            storageBucket: "camera-share-demo.firebasestorage.app",
+            messagingSenderId: "1084551271486",
+            appId: "1:1084551271486:web:929b1b0ac2dd7abf0aed6f",
+            measurementId: "G-Y0RWDV7FVF"
+        };
 
-
-<a class="card" href="./child.html">
-<h2>أنا ابن/ابنة</h2>
-<p>مشاركة الكاميرا / الميكروفون / الشاشة بموافقتي</p>
-</a>
-</div>
-
-
-<footer class="footnote">يعمل باستخدام Firebase + WebRTC | مشاركة بإذن كل مرة</footer>
-</div>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Elements
+        const startBtn = document.getElementById('startBtn');
+        const videoPreview = document.getElementById('videoPreview');
+        const status = document.getElementById('status');
+        
+        let localStream;
+        let peerConnection;
+        
+        // Server configuration (for ICE candidates)
+        const servers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
+        // Start sharing when button is clicked
+        startBtn.addEventListener('click', async () => {
+            try {
+                // Request camera and microphone access
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                // Display local video preview
+                const videoElement = document.createElement('video');
+                videoElement.srcObject = localStream;
+                videoElement.autoplay = true;
+                videoElement.muted = true;
+                videoElement.playsInline = true;
+                videoPreview.appendChild(videoElement);
+                videoPreview.style.display = 'block';
+                
+                // Change button and show status
+                startBtn.innerHTML = '<i class="fas fa-stop-circle"></i> إيقاف المشاركة';
+                startBtn.style.background = 'linear-gradient(to right, #ff7851, #ff5671)';
+                status.style.display = 'block';
+                
+                // Initialize WebRTC
+                await createPeerConnection();
+                await createOffer();
+                
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                alert('فشل في الوصول إلى الكاميرا أو الميكروفون. يرجى التحقق من الأذونات.');
+            }
+        });
+        
+        // Create peer connection
+        async function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(servers);
+            
+            // Add local stream to connection
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+            
+            // Listen for ICE candidates and add them to Firestore
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    db.collection('cameraConnections').doc('broadcaster').update({
+                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate)
+                    });
+                }
+            };
+            
+            // Listen for remote stream
+            peerConnection.ontrack = (event) => {
+                // This would be used if we expected a stream back from viewer
+            };
+            
+            // Listen for ICE candidates from viewer
+            db.collection('cameraConnections').doc('viewer')
+                .onSnapshot((doc) => {
+                    const data = doc.data();
+                    if (data && data.iceCandidates) {
+                        data.iceCandidates.forEach(candidate => {
+                            peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                        });
+                    }
+                });
+                
+            // Listen for answer from viewer
+            db.collection('cameraConnections').doc('viewerAnswer')
+                .onSnapshot(async (doc) => {
+                    const data = doc.data();
+                    if (data && data.answer) {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بالمشرف بنجاح!';
+                    }
+                });
+        }
+        
+        // Create offer and add it to Firestore
+        async function createOffer() {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            
+            // Clear any existing data
+            await db.collection('cameraConnections').doc('broadcaster').set({
+                offer: offer,
+                iceCandidates: []
+            });
+            
+            // Set up listener for Firestore changes
+            db.collection('cameraConnections').doc('broadcaster')
+                .onSnapshot((doc) => {
+                    // Handle any updates if needed
+                });
+        }
+    </script>
 </body>
 </html>
