@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>عرض توضيحي لمشاركة الكاميرا</title>
+    <title>مشاركة شاشة الجهاز - Live Screen Sharing</title>
     <style>
         * {
             box-sizing: border-box;
@@ -23,7 +23,7 @@
         }
         
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             width: 100%;
             background: rgba(0, 0, 0, 0.7);
             border-radius: 15px;
@@ -55,6 +55,7 @@
             justify-content: center;
             margin-bottom: 25px;
             gap: 15px;
+            flex-wrap: wrap;
         }
         
         .tab {
@@ -87,7 +88,7 @@
             display: block;
         }
         
-        .video-container {
+        .screen-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -95,23 +96,38 @@
             margin-bottom: 25px;
         }
         
-        .video-wrapper {
+        .screen-wrapper {
             position: relative;
-            width: 300px;
-            height: 225px;
+            width: 100%;
+            max-width: 800px;
+            height: 450px;
             border-radius: 10px;
             overflow: hidden;
             background: #000;
             border: 3px solid #fdbb2d;
         }
         
-        video {
+        video, .screen-placeholder {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
         
-        .video-label {
+        .screen-placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #222;
+            color: #ccc;
+        }
+        
+        .screen-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+        
+        .screen-label {
             position: absolute;
             bottom: 0;
             left: 0;
@@ -142,17 +158,28 @@
             min-width: 150px;
         }
         
-        #startBtn {
+        #shareScreenBtn {
             background: #4CAF50;
             color: white;
         }
         
-        #startBtn:hover {
+        #shareScreenBtn:hover {
             background: #45a049;
             transform: translateY(-3px);
         }
         
-        #startBtn:disabled {
+        #stopShareBtn {
+            background: #f44336;
+            color: white;
+            display: none;
+        }
+        
+        #stopShareBtn:hover {
+            background: #d32f2f;
+            transform: translateY(-3px);
+        }
+        
+        #shareScreenBtn:disabled, #requestAccessBtn:disabled {
             background: #666;
             cursor: not-allowed;
             transform: none;
@@ -190,48 +217,17 @@
             border-radius: 5px;
         }
         
-        .firebase-config {
-            background: rgba(156, 39, 176, 0.2);
-            border-left: 5px solid #9C27B0;
+        .instructions {
+            background: rgba(33, 150, 243, 0.2);
+            border-left: 5px solid #2196F3;
             padding: 15px;
-            margin-top: 15px;
+            margin-top: 20px;
             border-radius: 5px;
         }
         
-        .firebase-config h3 {
+        .instructions h3 {
             margin-bottom: 10px;
-            color: #BA68C8;
-        }
-        
-        .config-form {
-            margin-top: 15px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            background: rgba(255, 255, 255, 0.9);
-        }
-        
-        .save-btn {
-            background: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            color: #64B5F6;
         }
         
         footer {
@@ -241,7 +237,7 @@
             color: rgba(255, 255, 255, 0.7);
         }
         
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
             }
@@ -255,9 +251,8 @@
                 flex-direction: column;
             }
             
-            .video-wrapper {
-                width: 100%;
-                height: 200px;
+            .screen-wrapper {
+                height: 300px;
             }
         }
 
@@ -280,89 +275,69 @@
             color: #9C27B0;
             font-weight: bold;
         }
-        
-        .connection-status {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-left: 8px;
-        }
-        
-        .connected {
-            background-color: #4CAF50;
-        }
-        
-        .disconnected {
-            background-color: #f44336;
-        }
-        
-        .network-tips {
-            background: rgba(33, 150, 243, 0.2);
-            border-left: 5px solid #2196F3;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 5px;
-        }
-        
-        .network-tips h3 {
-            margin-bottom: 10px;
-            color: #64B5F6;
-        }
     </style>
 </head>
 <body>
     <header>
-        <h1>عرض توضيحي لمشاركة الكاميرا</h1>
-        <p class="description">هذا العرض التوضيحي يوضح كيفية استخدام Firebase كخادم إشارة لاتصالات WebRTC.</p>
+        <h1>مشاركة شاشة الجهاز مع المدير</h1>
+        <p class="description">هذا التطبيق يسمح لك بمشاركة شاشة جهازك مع المدير في الوقت الحقيقي.</p>
     </header>
     
     <div class="container">
         <div class="tabs">
             <button class="tab active" data-tab="user">صفحة المستخدم</button>
             <button class="tab" data-tab="admin">صفحة المدير</button>
-            <button class="tab" data-tab="config">إعدادات Firebase</button>
         </div>
         
         <div class="content active" id="user-content">
             <h2>صفحة المستخدم</h2>
-            <p class="description">تمثل هذه الصفحة مستخدمًا يريد مشاركة كاميرته مع المدير.</p>
+            <p class="description">من هنا يمكنك مشاركة شاشة جهازك مع المدير.</p>
             
-            <div class="video-container">
-                <div class="video-wrapper">
-                    <video id="userVideo" autoplay playsinline muted></video>
-                    <div class="video-label">كاميرتك</div>
+            <div class="screen-container">
+                <div class="screen-wrapper">
+                    <div class="screen-placeholder" id="userScreenPlaceholder">
+                        <div class="screen-icon">🖥️</div>
+                        <p>سيظهر هنا بث شاشة جهازك</p>
+                    </div>
+                    <video id="userScreen" autoplay playsinline muted style="display:none;"></video>
+                    <div class="screen-label">شاشة جهازك</div>
                 </div>
             </div>
             
-            <div class="status" id="userStatus">انقر على "بدء المشاركة" للبدء</div>
+            <div class="status" id="userStatus">انقر على "مشاركة الشاشة" للبدء</div>
             
             <div class="controls">
-                <button id="startBtn">بدء المشاركة</button>
+                <button id="shareScreenBtn">مشاركة الشاشة</button>
+                <button id="stopShareBtn">إيقاف المشاركة</button>
+            </div>
+            
+            <div class="instructions">
+                <h3>كيفية مشاركة الشاشة:</h3>
+                <ol>
+                    <li>انقر على زر "مشاركة الشاشة"</li>
+                    <li>سيطلب منك المتصفح اختيار ما تريد مشاركته (شاشة كاملة، نافذة تطبيق، أو تبويب)</li>
+                    <li>اختر ما تريد مشاركته وانقر على "مشاركة"</li>
+                    <li>سيتم بث شاشتك إلى المدير فوراً</li>
+                </ol>
             </div>
             
             <div class="log-container">
                 <div id="userLog"></div>
             </div>
-            
-            <div class="network-tips">
-                <h3>نصائح للاتصال بين الأجهزة:</h3>
-                <ul>
-                    <li>تأكد من أن كلا الجهازين متصلين بنفس الشبكة أو شبكات متوافقة</li>
-                    <li>جرب استخدام شبكة WiFi بدلاً من البيانات الخلوية</li>
-                    <li>إذا لم يعمل، جرب استخدام VPN على أحد الجهازين</li>
-                </ul>
-            </div>
         </div>
         
         <div class="content" id="admin-content">
             <h2>صفحة المدير</h2>
-            <p class="description">تمثل هذه الصفحة مديرًا يمكنه عرض جميع بثوث كاميرات المستخدمين.</p>
+            <p class="description">من هنا يمكنك مشاهدة شاشة المستخدمين في الوقت الحقيقي.</p>
             
-            <div class="video-container" id="adminVideos">
-                <div class="video-wrapper">
-                    <video id="placeholderVideo" autoplay playsinline muted></video>
-                    <div class="video-label">في انتظار الاتصالات...</div>
+            <div class="screen-container">
+                <div class="screen-wrapper">
+                    <div class="screen-placeholder" id="adminScreenPlaceholder">
+                        <div class="screen-icon">👀</div>
+                        <p>في انتظار بث الشاشة من المستخدم...</p>
+                    </div>
+                    <video id="adminScreen" autoplay playsinline muted style="display:none;"></video>
+                    <div class="screen-label">شاشة المستخدم</div>
                 </div>
             </div>
             
@@ -372,77 +347,21 @@
                 <div id="adminLog"></div>
             </div>
             
-            <div class="network-tips">
-                <h3>نصائح للاتصال بين الأجهزة:</h3>
-                <ul>
-                    <li>تأكد من فتح صفحة المدير على جهاز مختلف عن جهاز المستخدم</li>
-                    <li>جرب استخدام متصفحات مختلفة (Chrome, Firefox) على الأجهزة</li>
-                    <li>إذا لم يعمل، قد تحتاج إلى خادم TURN مخصص للشبكات المقيدة</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="content" id="config-content">
-            <h2>إعدادات Firebase</h2>
-            <p class="description">تم تكوين Firebase تلقائيًا باستخدام بيانات مشروعك.</p>
-            
-            <div class="firebase-config">
-                <h3>تكوين Firebase</h3>
-                <p>تم تكوين Firebase باستخدام بيانات مشروعك بنجاح!</p>
-                
-                <div class="config-form">
-                    <div class="form-group">
-                        <label for="apiKey">API Key:</label>
-                        <input type="text" id="apiKey" value="AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="authDomain">Auth Domain:</label>
-                        <input type="text" id="authDomain" value="camera-share-demo.firebaseapp.com" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="projectId">Project ID:</label>
-                        <input type="text" id="projectId" value="camera-share-demo" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="storageBucket">Storage Bucket:</label>
-                        <input type="text" id="storageBucket" value="camera-share-demo.firebasestorage.app" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="messagingSenderId">Messaging Sender ID:</label>
-                        <input type="text" id="messagingSenderId" value="1084551271486" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="appId">App ID:</label>
-                        <input type="text" id="appId" value="1:1084551271486:web:929b1b0ac2dd7abf0aed6f" readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="measurementId">Measurement ID:</label>
-                        <input type="text" id="measurementId" value="G-Y0RWDV7FVF" readonly>
-                    </div>
-                </div>
-            </div>
-            
             <div class="warning">
-                <strong>ملاحظة:</strong> هذا عرض توضيحي لأغراض تعليمية. يرجى التأكد من الحصول على إذن لاستخدام الكاميرات والميكروفونات.
+                <strong>ملاحظة:</strong> هذا التطبيق لأغراض تعليمية فقط. يرجى احترام خصوصية المستخدمين وعدم مشاركة الشاشة دون إذنهم.
             </div>
         </div>
     </div>
     
     <footer>
-        <p>عرض توضيحي لـ WebRTC مع Firebase - 2023</p>
+        <p>تطبيق مشاركة الشاشة - 2023</p>
     </footer>
 
     <!-- Firebase App (core Firebase SDK) -->
     <script type="module">
         // استيراد الدوال التي تحتاجها من SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
         
         // تكوين Firebase - باستخدام بيانات مشروعك
         const firebaseConfig = {
@@ -458,7 +377,7 @@
         // تهيئة Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const callsCollection = collection(db, "calls");
+        const screensCollection = collection(db, "screenShares");
         
         // وظيفة تبديل علامات التبويب
         document.querySelectorAll('.tab').forEach(tab => {
@@ -472,8 +391,10 @@
         });
         
         // وظائف صفحة المستخدم
-        const userVideo = document.getElementById('userVideo');
-        const startBtn = document.getElementById('startBtn');
+        const userScreen = document.getElementById('userScreen');
+        const userScreenPlaceholder = document.getElementById('userScreenPlaceholder');
+        const shareScreenBtn = document.getElementById('shareScreenBtn');
+        const stopShareBtn = document.getElementById('stopShareBtn');
         const userStatus = document.getElementById('userStatus');
         const userLog = document.getElementById('userLog');
         
@@ -490,77 +411,83 @@
             userStatus.textContent = message;
         }
         
-        startBtn.addEventListener('click', async () => {
+        // متغيرات حالة التطبيق
+        let screenStream = null;
+        let peerConnection = null;
+        let screenDocRef = null;
+        
+        // مشاركة الشاشة
+        shareScreenBtn.addEventListener('click', async () => {
             try {
-                userWriteLog('جاري طلب إذن استخدام الكاميرا والميكروفون...');
-                updateUserStatus('جاري طلب إذن الكاميرا...');
+                userWriteLog('جاري طلب إذن مشاركة الشاشة...');
+                updateUserStatus('جاري طلب إذن مشاركة الشاشة...');
                 
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: true, 
-                    audio: true 
+                // طلب مشاركة الشاشة
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: "always",
+                        displaySurface: "monitor" // أو "window" أو "browser"
+                    },
+                    audio: true // يمكنك تعطيل الصوت إذا لم يكن مطلوبًا
                 });
                 
-                userVideo.srcObject = stream;
-                userWriteLog('تم منح إذن استخدام الكاميرا والميكروفون');
-                updateUserStatus('بدأ بث الكاميرا');
+                // عرض الشاشة المحلية
+                userScreen.srcObject = screenStream;
+                userScreen.style.display = 'block';
+                userScreenPlaceholder.style.display = 'none';
+                
+                userWriteLog('تم منح إذن مشاركة الشاشة');
+                updateUserStatus('بدأ بث الشاشة');
+                
+                // تغيير الأزرار
+                shareScreenBtn.style.display = 'none';
+                stopShareBtn.style.display = 'block';
                 
                 // إنشاء اتصال نظير مع خوادم STUN/TURN
-                const peerConnection = new RTCPeerConnection({
+                peerConnection = new RTCPeerConnection({
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
                         { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' },
                         {
                             urls: 'turn:openrelay.metered.ca:80',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-                            username: 'webrtc',
-                            credential: 'webrtc'
                         }
-                    ],
-                    iceTransportPolicy: 'all' // حاول استخدام كل أنواع الاتصالات
+                    ]
                 });
                 
                 // إضافة مسارات البث إلى الاتصال
-                stream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, stream);
+                screenStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, screenStream);
+                    // إعادة تعيين الاتصال عند انتهاء المسار
+                    track.onended = () => {
+                        userWriteLog('تم إيقاف مشاركة الشاشة', 'info');
+                        stopSharing();
+                    };
                 });
                 
                 // إنشاء عرض اتصال
-                const offer = await peerConnection.createOffer({
-                    offerToReceiveAudio: true,
-                    offerToReceiveVideo: true
-                });
+                const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 
                 userWriteLog('تم إنشاء عرض WebRTC');
                 
                 // حفظ العرض في Firestore
-                const docRef = await addDoc(callsCollection, {
+                screenDocRef = await addDoc(screensCollection, {
                     offer: offer,
-                    createdAt: new Date()
+                    createdAt: new Date(),
+                    type: 'screen_share'
                 });
                 
-                userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${docRef.id}`);
+                userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${screenDocRef.id}`);
                 
                 // بعد إنشاء docRef، قم بإعداد ICE candidates
-                const offerCandidates = collection(db, "calls", docRef.id, "offerCandidates");
+                const offerCandidates = collection(db, "screenShares", screenDocRef.id, "offerCandidates");
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
                         userWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
                         addDoc(offerCandidates, event.candidate.toJSON());
-                    } else {
-                        userWriteLog('اكتمل جمع مرشحي ICE', 'ice');
                     }
                 };
                 
@@ -569,19 +496,13 @@
                     userWriteLog(`حالة الاتصال: ${peerConnection.connectionState}`);
                     if (peerConnection.connectionState === 'connected') {
                         updateUserStatus('متصل بنجاح مع المدير');
-                    } else if (peerConnection.connectionState === 'disconnected' || 
-                               peerConnection.connectionState === 'failed') {
+                    } else if (peerConnection.connectionState === 'disconnected') {
                         updateUserStatus('تم فقدان الاتصال مع المدير');
                     }
                 };
                 
-                // مراقبة حالة ICE
-                peerConnection.oniceconnectionstatechange = () => {
-                    userWriteLog(`حالة ICE: ${peerConnection.iceConnectionState}`);
-                };
-                
                 // الاستماع للرد من المدير
-                onSnapshot(doc(db, "calls", docRef.id), async (docSnapshot) => {
+                onSnapshot(doc(db, "screenShares", screenDocRef.id), async (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const data = docSnapshot.data();
                         
@@ -596,7 +517,7 @@
                 });
                 
                 // الاستماع لمرشحي ICE من المدير
-                const answerCandidates = collection(db, "calls", docRef.id, "answerCandidates");
+                const answerCandidates = collection(db, "screenShares", screenDocRef.id, "answerCandidates");
                 onSnapshot(answerCandidates, (snapshot) => {
                     snapshot.docChanges().forEach(async (change) => {
                         if (change.type === "added") {
@@ -612,17 +533,47 @@
                     });
                 });
                 
-                startBtn.disabled = true;
-                startBtn.textContent = 'مشاركة نشطة';
-                
             } catch (error) {
                 userWriteLog(`خطأ: ${error.message}`, 'error');
-                updateUserStatus('خطأ في الوصول إلى الكاميرا');
+                updateUserStatus('خطأ في مشاركة الشاشة');
             }
         });
         
+        // إيقاف مشاركة الشاشة
+        stopShareBtn.addEventListener('click', stopSharing);
+        
+        function stopSharing() {
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+            }
+            
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            // إعادة تعيين واجهة المستخدم
+            userScreen.style.display = 'none';
+            userScreenPlaceholder.style.display = 'flex';
+            userScreen.srcObject = null;
+            
+            shareScreenBtn.style.display = 'block';
+            stopShareBtn.style.display = 'none';
+            
+            updateUserStatus('تم إيقاف مشاركة الشاشة');
+            userWriteLog('تم إيقاف مشاركة الشاشة', 'info');
+            
+            // حذف العرض من Firestore إذا كان موجودًا
+            if (screenDocRef) {
+                // في تطبيق حقيقي، قد ترغب في حذف المستند من Firestore
+                screenDocRef = null;
+            }
+        }
+        
         // وظائف صفحة المدير
-        const adminVideos = document.getElementById('adminVideos');
+        const adminScreen = document.getElementById('adminScreen');
+        const adminScreenPlaceholder = document.getElementById('adminScreenPlaceholder');
         const adminStatus = document.getElementById('adminStatus');
         const adminLog = document.getElementById('adminLog');
         
@@ -640,104 +591,49 @@
         }
         
         // الاستماع للعروض الجديدة في Firestore
-        onSnapshot(callsCollection, (snapshot) => {
+        onSnapshot(screensCollection, (snapshot) => {
             snapshot.docChanges().forEach(async (change) => {
                 if (change.type === "added") {
                     const data = change.doc.data();
-                    if (data.offer && !data.answer) {
-                        adminWriteLog(`تم استلام عرض جديد من المستخدم: ${change.doc.id}`);
-                        updateAdminStatus('تم استلام اتصال جديد');
+                    if (data.offer && !data.answer && data.type === 'screen_share') {
+                        adminWriteLog(`تم استلام عرض مشاركة شاشة جديد: ${change.doc.id}`);
+                        updateAdminStatus('تم استلام اتصال مشاركة شاشة');
                         
                         // إزالة العنصر النائب إذا كان موجودًا
-                        if (document.getElementById('placeholderVideo')) {
-                            adminVideos.innerHTML = '';
-                        }
+                        adminScreen.style.display = 'block';
+                        adminScreenPlaceholder.style.display = 'none';
                         
-                        // إنشاء اتصال نظير جديد مع خوادم STUN/TURN
+                        // إنشاء اتصال نظير جديد
                         const peerConnection = new RTCPeerConnection({
                             iceServers: [
                                 { urls: 'stun:stun.l.google.com:19302' },
                                 { urls: 'stun:stun1.l.google.com:19302' },
-                                { urls: 'stun:stun2.l.google.com:19302' },
-                                { urls: 'stun:stun3.l.google.com:19302' },
-                                { urls: 'stun:stun4.l.google.com:19302' },
                                 {
                                     urls: 'turn:openrelay.metered.ca:80',
                                     username: 'openrelayproject',
                                     credential: 'openrelayproject'
-                                },
-                                {
-                                    urls: 'turn:openrelay.metered.ca:443',
-                                    username: 'openrelayproject',
-                                    credential: 'openrelayproject'
-                                },
-                                {
-                                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-                                    username: 'webrtc',
-                                    credential: 'webrtc'
                                 }
-                            ],
-                            iceTransportPolicy: 'all'
+                            ]
                         });
-                        
-                        // إنشاء عنصر فيديو لهذا الاتصال
-                        const videoWrapper = document.createElement('div');
-                        videoWrapper.className = 'video-wrapper';
-                        videoWrapper.id = `video-${change.doc.id}`;
-                        
-                        const video = document.createElement('video');
-                        video.autoplay = true;
-                        video.playsInline = true;
-                        video.muted = true; // مهم لضمان تشغيل الفيديو
-                        video.id = `video-${change.doc.id}`;
-                        
-                        const videoLabel = document.createElement('div');
-                        videoLabel.className = 'video-label';
-                        videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
-                        
-                        videoWrapper.appendChild(video);
-                        videoWrapper.appendChild(videoLabel);
-                        adminVideos.appendChild(videoWrapper);
                         
                         // التعامل مع البث الوارد
                         peerConnection.ontrack = (event) => {
-                            adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
-                            video.srcObject = event.streams[0];
-                            
-                            // إضافة زر لإلغاء كتم الصوت
-                            const unmuteBtn = document.createElement('button');
-                            unmuteBtn.textContent = '🔇 إلغاء كتم الصوت';
-                            unmuteBtn.style.cssText = 'position:absolute; top:10px; right:10px; padding:5px; background:rgba(0,0,0,0.5); color:white; border:none; border-radius:5px; cursor:pointer;';
-                            unmuteBtn.onclick = () => {
-                                video.muted = !video.muted;
-                                unmuteBtn.textContent = video.muted ? '🔇 إلغاء كتم الصوت' : '🔊 كتم الصوت';
-                            };
-                            videoWrapper.appendChild(unmuteBtn);
-                        };
-                        
-                        // مراقبة حالة الاتصال
-                        peerConnection.onconnectionstatechange = () => {
-                            adminWriteLog(`حالة الاتصال مع ${change.doc.id.substring(0, 8)}: ${peerConnection.connectionState}`);
-                        };
-                        
-                        // مراقبة حالة ICE
-                        peerConnection.oniceconnectionstatechange = () => {
-                            adminWriteLog(`حالة ICE مع ${change.doc.id.substring(0, 8)}: ${peerConnection.iceConnectionState}`);
+                            adminWriteLog(`تم استلام بث الشاشة من المستخدم: ${change.doc.id}`);
+                            adminScreen.srcObject = event.streams[0];
+                            updateAdminStatus('جاري استقبال بث الشاشة');
                         };
                         
                         // حفظ مرشحي ICE من المدير
-                        const answerCandidates = collection(db, "calls", change.doc.id, "answerCandidates");
+                        const answerCandidates = collection(db, "screenShares", change.doc.id, "answerCandidates");
                         peerConnection.onicecandidate = (event) => {
                             if (event.candidate) {
                                 adminWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
                                 addDoc(answerCandidates, event.candidate.toJSON());
-                            } else {
-                                adminWriteLog('اكتمل جمع مرشحي ICE', 'ice');
                             }
                         };
                         
                         // الاستماع لمرشحي ICE من المستخدم
-                        const offerCandidates = collection(db, "calls", change.doc.id, "offerCandidates");
+                        const offerCandidates = collection(db, "screenShares", change.doc.id, "offerCandidates");
                         onSnapshot(offerCandidates, (snapshot) => {
                             snapshot.docChanges().forEach(async (change) => {
                                 if (change.type === "added") {
@@ -759,25 +655,22 @@
                         adminWriteLog(`تم تعيين وصف الاتصال البعيد للمستخدم: ${change.doc.id}`);
                         
                         // إنشاء رد
-                        const answer = await peerConnection.createAnswer({
-                            offerToReceiveAudio: true,
-                            offerToReceiveVideo: true
-                        });
+                        const answer = await peerConnection.createAnswer();
                         await peerConnection.setLocalDescription(answer);
                         
                         // حفظ الرد في Firestore
-                        await updateDoc(doc(db, "calls", change.doc.id), {
+                        await updateDoc(doc(db, "screenShares", change.doc.id), {
                             answer: answer
                         });
                         
                         adminWriteLog(`تم إرسال الرد إلى المستخدم: ${change.doc.id}`);
-                        updateAdminStatus(`${adminVideos.childElementCount} اتصالات نشطة`);
+                        updateAdminStatus('جاري مشاهدة شاشة المستخدم');
                     }
                 }
             });
         });
         
-        adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لاتصالات المستخدمين...');
+        adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لطلبات مشاركة الشاشة...');
     </script>
 </body>
 </html>
