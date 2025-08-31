@@ -320,7 +320,7 @@
                     
                     // استخدام set مع merge بدلاً من update
                     db.collection('cameraConnections').doc('viewer').set({
-                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate)
+                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate.toJSON())
                     }, { merge: true }).catch(error => {
                         logDebug(`خطأ في إرسال مرشح ICE: ${error.message}`);
                     });
@@ -355,6 +355,7 @@
                 const data = offerDoc.data();
                 if (data.offer) {
                     logDebug('تم استقبال عرض اتصال، جاري المعالجة...');
+                    // تحويل البيانات المستلمة إلى كائن RTCSessionDescription
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
                     
                     // Create answer
@@ -362,9 +363,9 @@
                     await peerConnection.setLocalDescription(answer);
                     logDebug('تم إنشاء إجابة الاتصال');
                     
-                    // Send answer to Firestore
+                    // Send answer to Firestore (بتحويلها إلى JSON)
                     await db.collection('cameraConnections').doc('viewerAnswer').set({
-                        answer: answer
+                        answer: answer.toJSON()  // تحويل الإجابة إلى JSON
                     });
                     logDebug('تم إرسال الإجابة إلى Firebase');
                     

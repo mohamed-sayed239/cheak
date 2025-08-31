@@ -325,8 +325,9 @@
             // Listen for ICE candidates and add them to Firestore
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
+                    const candidateData = event.candidate.toJSON();  // تحويل المرشح إلى JSON
                     db.collection('cameraConnections').doc('broadcaster').set({
-                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate)
+                        iceCandidates: firebase.firestore.FieldValue.arrayUnion(candidateData)
                     }, { merge: true });
                 }
             };
@@ -371,7 +372,7 @@
             
             // Clear any existing data and set new offer
             await db.collection('cameraConnections').doc('broadcaster').set({
-                offer: offer,
+                offer: offer.toJSON(),  // تحويل العرض إلى JSON
                 iceCandidates: []
             });
             
