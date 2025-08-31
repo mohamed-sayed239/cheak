@@ -103,6 +103,12 @@
             overflow: hidden;
             background: #000;
             border: 3px solid #fdbb2d;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .video-wrapper:hover {
+            transform: scale(1.05);
         }
         
         video {
@@ -121,6 +127,27 @@
             padding: 5px;
             text-align: center;
             font-size: 14px;
+        }
+        
+        .video-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .control-btn {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
         }
         
         .controls {
@@ -392,261 +419,287 @@
     </footer>
 
     <!-- Firebase App (core Firebase SDK) -->
-<script type="module">
-  // استيراد Firebase SDK
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-
-  // إعدادات Firebase (بتاعتك زي ما هي)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8",
-    authDomain: "camera-share-demo.firebaseapp.com",
-    projectId: "camera-share-demo",
-    storageBucket: "camera-share-demo.firebasestorage.app",
-    messagingSenderId: "1084551271486",
-    appId: "1:1084551271486:web:929b1b0ac2dd7abf0aed6f",
-    measurementId: "G-Y0RWDV7FVF"
-  };
-
-  // init
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const callsCollection = collection(db, "calls");
-
-  // تبويب
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.tab + '-content').classList.add('active');
-    });
-  });
-
-  // إعداد ICE/TURN للطرفين (user + admin)
-  const forceRelay = new URLSearchParams(location.search).has('relay'); // لو زوّدت ?relay=1 في الرابط هيجبر TURN
-  const rtcConfig = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-    ],
-    iceTransportPolicy: forceRelay ? 'relay' : 'all'
-  };
-
-  // ===== صفحة المستخدم =====
-  const userVideo   = document.getElementById('userVideo');
-  const startBtn    = document.getElementById('startBtn');
-  const userStatus  = document.getElementById('userStatus');
-  const userLog     = document.getElementById('userLog');
-
-  const userWriteLog = (msg, type='info') => {
-    const time = new Date().toLocaleTimeString();
-    const cls = type==='error' ? 'error' : (type==='success'?'success': (type==='ice'?'ice':'info'));
-    userLog.innerHTML += `<span class="${cls}">${time} - ${msg}</span>\n`;
-    userLog.scrollTop = userLog.scrollHeight;
-  };
-  const updateUserStatus = (msg) => userStatus.textContent = msg;
-
-  startBtn.addEventListener('click', async () => {
-    try {
-      userWriteLog('جاري طلب إذن الكاميرا/المايك...');
-      updateUserStatus('طلب إذن الكاميرا...');
-
-      // قلل الجودة لتسهيل العبور عبر TURN
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } },
-        audio: true
-      });
-
-      userVideo.srcObject = stream;
-      userVideo.onloadedmetadata = () => userVideo.play().catch(()=>{});
-      userWriteLog('تم منح الإذن، بدأ البث المحلي');
-      updateUserStatus('بدأ بث الكاميرا');
-
-      // RTCPeerConnection مع نفس TURN
-      const peerConnection = new RTCPeerConnection(rtcConfig);
-
-      // لوج لحالات الاتصال
-      peerConnection.addEventListener('iceconnectionstatechange', () => {
-        userWriteLog(`ICE state: ${peerConnection.iceConnectionState}`, peerConnection.iceConnectionState==='failed'?'error':'ice');
-      });
-      peerConnection.addEventListener('connectionstatechange', () => {
-        userWriteLog(`Peer state: ${peerConnection.connectionState}`);
-      });
-      peerConnection.addEventListener('icecandidateerror', (e) => {
-        userWriteLog(`ICE error: ${e.errorText || e.errorCode || 'unknown'}`, 'error');
-      });
-
-      // أضف المسارات
-      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
-      // اعمل Offer
-      const offer = await peerConnection.createOffer({ offerToReceiveVideo: false, offerToReceiveAudio: false });
-      await peerConnection.setLocalDescription(offer);
-      userWriteLog('تم إنشاء عرض WebRTC');
-
-      // خزّن العرض في Firestore
-      const docRef = await addDoc(callsCollection, { offer, createdAt: new Date() });
-      userWriteLog(`تم حفظ العرض بالمعرّف: ${docRef.id}`);
-
-      // مرشحي ICE (User -> offerCandidates)
-      const offerCandidates = collection(db, "calls", docRef.id, "offerCandidates");
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          userWriteLog('مرشح ICE (user) أُنشئ', 'ice');
-          addDoc(offerCandidates, event.candidate.toJSON());
-        }
-      };
-
-      // استماع للـ Answer
-      onSnapshot(doc(db, "calls", docRef.id), async (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.answer && !peerConnection.remoteDescription) {
-            userWriteLog('تم استلام Answer من المدير');
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            userWriteLog('تم تعيين الوصف البعيد');
-          }
-        }
-      });
-
-      // استماع لمرشحي ICE من المدير (answerCandidates)
-      const answerCandidates = collection(db, "calls", docRef.id, "answerCandidates");
-      onSnapshot(answerCandidates, (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
-          if (change.type === "added") {
-            try {
-              await peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-              userWriteLog('تمت إضافة مرشح ICE من المدير', 'ice');
-            } catch (err) {
-              userWriteLog(`خطأ إضافة ICE: ${err.message}`, 'error');
-            }
-          }
+    <script type="module">
+        // استيراد الدوال التي تحتاجها من SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        
+        // تكوين Firebase - باستخدام بيانات مشروعك
+        const firebaseConfig = {
+            apiKey: "AIzaSyAo8NPynRlZgoVspEH7uUwoOp2nNc-QBj8",
+            authDomain: "camera-share-demo.firebaseapp.com",
+            projectId: "camera-share-demo",
+            storageBucket: "camera-share-demo.firebasestorage.app",
+            messagingSenderId: "1084551271486",
+            appId: "1:1084551271486:web:929b1b0ac2dd7abf0aed6f",
+            measurementId: "G-Y0RWDV7FVF"
+        };
+        
+        // تهيئة Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const callsCollection = collection(db, "calls");
+        
+        // وظيفة تبديل علامات التبويب
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-content').classlassList.add('active');
+            });
         });
-      });
-
-      startBtn.disabled = true;
-      startBtn.textContent = 'مشاركة نشطة';
-    } catch (err) {
-      userWriteLog(`خطأ: ${err.message}`, 'error');
-      updateUserStatus('خطأ في الوصول إلى الكاميرا');
-    }
-  });
-
-  // ===== صفحة المدير =====
-  const adminVideos = document.getElementById('adminVideos');
-  const adminStatus = document.getElementById('adminStatus');
-  const adminLog    = document.getElementById('adminLog');
-
-  const adminWriteLog = (msg, type='info') => {
-    const time = new Date().toLocaleTimeString();
-    const cls = type==='error' ? 'error' : (type==='success'?'success': (type==='ice'?'ice':'info'));
-    adminLog.innerHTML += `<span class="${cls}">${time} - ${msg}</span>\n`;
-    adminLog.scrollTop = adminLog.scrollHeight;
-  };
-  const updateAdminStatus = (msg) => adminStatus.textContent = msg;
-
-  onSnapshot(callsCollection, (snapshot) => {
-    snapshot.docChanges().forEach(async (chg) => {
-      if (chg.type === "added") {
-        const data = chg.doc.data();
-        if (data.offer && !data.answer) {
-          const callId = chg.doc.id;
-          adminWriteLog(`Offer جديد من المستخدم: ${callId}`);
-          updateAdminStatus('تم استلام اتصال جديد');
-
-          // شيل العنصر النائب لو موجود
-          const ph = document.getElementById('placeholderVideo');
-          if (ph) adminVideos.innerHTML = '';
-
-          // RTCPeerConnection بنفس TURN
-          const pc = new RTCPeerConnection(rtcConfig);
-
-          // لوج حالات الاتصال
-          pc.addEventListener('iceconnectionstatechange', () => {
-            adminWriteLog(`ICE state (${callId}): ${pc.iceConnectionState}`, pc.iceConnectionState==='failed'?'error':'ice');
-          });
-          pc.addEventListener('connectionstatechange', () => {
-            adminWriteLog(`Peer state (${callId}): ${pc.connectionState}`);
-          });
-          pc.addEventListener('icecandidateerror', (e) => {
-            adminWriteLog(`ICE error (${callId}): ${e.errorText || e.errorCode || 'unknown'}`, 'error');
-          });
-
-          // عنصر فيديو
-          const wrapper = document.createElement('div');
-          wrapper.className = 'video-wrapper';
-          wrapper.id = `card-${callId}`;
-
-          const video = document.createElement('video');
-          video.autoplay = true;
-          video.playsInline = true;
-          video.muted = true;   // للسماح بالتشغيل التلقائي
-          video.id = `video-${callId}`;
-
-          const label = document.createElement('div');
-          label.className = 'video-label';
-          label.textContent = `مستخدم: ${callId.substring(0,8)}`;
-
-          wrapper.appendChild(video);
-          wrapper.appendChild(label);
-          adminVideos.appendChild(wrapper);
-
-          // استقبال البث
-          pc.ontrack = (event) => {
-            adminWriteLog(`وصول بث من المستخدم: ${callId}`);
-            video.srcObject = event.streams[0];
-            // شغّل الفيديو صراحة — بعض الأجهزة تعوزه
-            const playNow = () => video.play().catch(err => {
-              adminWriteLog(`فشل play(): ${err.message}`, 'error');
-            });
-            video.onloadedmetadata = playNow;
-            setTimeout(playNow, 0);
-          };
-
-          // مرشحي ICE (Admin -> answerCandidates)
-          const answerCandidates = collection(db, "calls", callId, "answerCandidates");
-          pc.onicecandidate = (event) => {
-            if (event.candidate) {
-              adminWriteLog('مرشح ICE (admin) أُنشئ', 'ice');
-              addDoc(answerCandidates, event.candidate.toJSON());
-            }
-          };
-
-          // مرشحي المستخدم
-          const offerCandidates = collection(db, "calls", callId, "offerCandidates");
-          onSnapshot(offerCandidates, (sn) => {
-            sn.docChanges().forEach(async (c) => {
-              if (c.type === "added") {
-                try {
-                  await pc.addIceCandidate(new RTCIceCandidate(c.doc.data()));
-                  adminWriteLog('تمت إضافة مرشح ICE من المستخدم', 'ice');
-                } catch (err) {
-                  adminWriteLog(`خطأ إضافة ICE: ${err.message}`, 'error');
-                }
-              }
-            });
-          });
-
-          // وصف بعيد + Answer
-          const offerDescription = new RTCSessionDescription(data.offer);
-          await pc.setRemoteDescription(offerDescription);
-          adminWriteLog(`تم تعيين الوصف البعيد للمستخدم: ${callId}`);
-
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await updateDoc(doc(db, "calls", callId), { answer });
-
-          adminWriteLog(`تم إرسال الـ Answer إلى المستخدم: ${callId}`);
-          updateAdminStatus(`${adminVideos.childElementCount} اتصالات نشطة`);
+        
+        // وظائف صفحة المستخدم
+        const userVideo = document.getElementById('userVideo');
+        const startBtn = document.getElementById('startBtn');
+        const userStatus = document.getElementById('userStatus');
+        const userLog = document.getElementById('userLog');
+        
+        function userWriteLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : 
+                            (type === 'success' ? 'success' : 
+                            (type === 'ice' ? 'ice' : 'info'));
+            userLog.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
+            userLog.scrollTop = userLog.scrollHeight;
         }
-      }
-    });
-  });
-
-  adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لاتصالات المستخدمين...');
-</script>
+        
+        function updateUserStatus(message) {
+            userStatus.textContent = message;
+        }
+        
+        startBtn.addEventListener('click', async () => {
+            try {
+                userWriteLog('جاري طلب إذن استخدام الكاميرا والميكروفون...');
+                updateUserStatus('جاري طلب إذن الكاميرا...');
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                userVideo.srcObject = stream;
+                userWriteLog('تم منح إذن استخدام الكاميرا والميكروفون');
+                updateUserStatus('بدأ بث الكاميرا');
+                
+                // إنشاء اتصال نظير
+                const peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+                
+                // إضافة مسارات البث إلى الاتصال
+                stream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, stream);
+                });
+                
+                // إنشاء عرض اتصال
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                userWriteLog('تم إنشاء عرض WebRTC');
+                
+                // حفظ العرض في Firestore
+                const docRef = await addDoc(callsCollection, {
+                    offer: offer,
+                    createdAt: new Date()
+                });
+                
+                userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${docRef.id}`);
+                
+                // بعد إنشاء docRef، قم بإعداد ICE candidates
+                const offerCandidates = collection(db, "calls", docRef.id, "offerCandidates");
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        userWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
+                        addDoc(offerCandidates, event.candidate.toJSON());
+                    }
+                };
+                
+                // الاستماع للرد من المدير
+                onSnapshot(doc(db, "calls", docRef.id), async (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const data = docSnapshot.data();
+                        
+                        // معالجة الرد من المدير
+                        if (data.answer && !peerConnection.remoteDescription) {
+                            userWriteLog('تم استلام رد من المدير');
+                            const answerDescription = new RTCSessionDescription(data.answer);
+                            await peerConnection.setRemoteDescription(answerDescription);
+                            userWriteLog('تم تعيين وصف الاتصال البعيد بنجاح');
+                        }
+                    }
+                });
+                
+                // الاستماع لمرشحي ICE من المدير
+                const answerCandidates = collection(db, "calls", docRef.id, "answerCandidates");
+                onSnapshot(answerCandidates, (snapshot) => {
+                    snapshot.docChanges().forEach(async (change) => {
+                        if (change.type === "added") {
+                            const data = change.doc.data();
+                            userWriteLog('تم استلام مرشح ICE من المدير', 'ice');
+                            try {
+                                await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+                                userWriteLog('تمت إضافة مرشح ICE بنجاح', 'ice');
+                            } catch (error) {
+                                userWriteLog(`خطأ في إضافة مرشح ICE: ${error}`, 'error');
+                            }
+                        }
+                    });
+                });
+                
+                startBtn.disabled = true;
+                startBtn.textContent = 'مشاركة نشطة';
+                
+            } catch (error) {
+                userWriteLog(`خطأ: ${error.message}`, 'error');
+                updateUserStatus('خطأ في الوصول إلى الكاميرا');
+            }
+        });
+        
+        // وظائف صفحة المدير
+        const adminVideos = document.getElementById('adminVideos');
+        const adminStatus = document.getElementById('adminStatus');
+        const adminLog = document.getElementById('adminLog');
+        
+        function adminWriteLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : 
+                            (type === 'success' ? 'success' : 
+                            (type === 'ice' ? 'ice' : 'info'));
+            adminLog.innerHTML += `<span class="${className}">${time} - ${message}</span>\n`;
+            adminLog.scrollTop = adminLog.scrollHeight;
+        }
+        
+        function updateAdminStatus(message) {
+            adminStatus.textContent = message;
+        }
+        
+        // الاستماع للعروض الجديدة في Firestore
+        onSnapshot(callsCollection, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+                    if (data.offer && !data.answer) {
+                        adminWriteLog(`تم استلام عرض جديد من المستخدم: ${change.doc.id}`);
+                        updateAdminStatus('تم استلام اتصال جديد');
+                        
+                        // إزالة العنصر النائب إذا كان موجودًا
+                        if (document.getElementById('placeholderVideo')) {
+                            adminVideos.innerHTML = '';
+                        }
+                        
+                        // إنشاء اتصال نظير جديد
+                        const peerConnection = new RTCPeerConnection({
+                            iceServers: [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' }
+                            ]
+                        });
+                        
+                        // إنشاء عنصر فيديو لهذا الاتصال
+                        const videoWrapper = document.createElement('div');
+                        videoWrapper.className = 'video-wrapper';
+                        videoWrapper.id = `video-${change.doc.id}`;
+                        
+                        const video = document.createElement('video');
+                        video.autoplay = true;
+                        video.playsInline = true;
+                        video.muted = true; // إضافة muted=true لإصلاح المشكلة
+                        video.id = `video-${change.doc.id}`;
+                        
+                        const videoLabel = document.createElement('div');
+                        videoLabel.className = 'video-label';
+                        videoLabel.textContent = `مستخدم: ${change.doc.id.substring(0, 8)}`;
+                        
+                        // إضافة زر لإلغاء كتم الصوت
+                        const unmuteBtn = document.createElement('button');
+                        unmuteBtn.className = 'control-btn';
+                        unmuteBtn.innerHTML = '🔇';
+                        unmuteBtn.title = 'إلغاء كتم الصوت';
+                        
+                        const videoControls = document.createElement('div');
+                        videoControls.className = 'video-controls';
+                        videoControls.appendChild(unmuteBtn);
+                        
+                        videoWrapper.appendChild(video);
+                        videoWrapper.appendChild(videoLabel);
+                        videoWrapper.appendChild(videoControls);
+                        adminVideos.appendChild(videoWrapper);
+                        
+                        // إلغاء كتم الصوت عند النقر
+                        unmuteBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            video.muted = !video.muted;
+                            unmuteBtn.innerHTML = video.muted ? '🔇' : '🔊';
+                            unmuteBtn.title = video.muted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
+                        });
+                        
+                        // إلغاء كتم الصوت عند النقر على الفيديو
+                        videoWrapper.addEventListener('click', () => {
+                            video.muted = !video.muted;
+                            unmuteBtn.innerHTML = video.muted ? '🔇' : '🔊';
+                            unmuteBtn.title = video.muted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
+                        });
+                        
+                        // التعامل مع البث الوارد
+                        peerConnection.ontrack = (event) => {
+                            adminWriteLog(`تم استلام بث من المستخدم: ${change.doc.id}`);
+                            video.srcObject = event.streams[0];
+                        };
+                        
+                        // حفظ مرشحي ICE من المدير
+                        const answerCandidates = collection(db, "calls", change.doc.id, "answerCandidates");
+                        peerConnection.onicecandidate = (event) => {
+                            if (event.candidate) {
+                                adminWriteLog('تم إنشاء مرشح ICE جديد', 'ice');
+                                addDoc(answerCandidates, event.candidate.toJSON());
+                            }
+                        };
+                        
+                        // الاستماع لمرشحي ICE من المستخدم
+                        const offerCandidates = collection(db, "calls", change.doc.id, "offerCandidates");
+                        onSnapshot(offerCandidates, (snapshot) => {
+                            snapshot.docChanges().forEach(async (change) => {
+                                if (change.type === "added") {
+                                    const data = change.doc.data();
+                                    adminWriteLog('تم استلام مرشح ICE من المستخدم', 'ice');
+                                    try {
+                                        await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+                                        adminWriteLog('تمت إضافة مرشح ICE بنجاح', 'ice');
+                                    } catch (error) {
+                                        adminWriteLog(`خطأ في إضافة مرشح ICE: ${error}`, 'error');
+                                    }
+                                }
+                            });
+                        });
+                        
+                        // تعيين وصف الاتصال البعيد
+                        const offerDescription = new RTCSessionDescription(data.offer);
+                        await peerConnection.setRemoteDescription(offerDescription);
+                        adminWriteLog(`تم تعيين وصف الاتصال البعيد للمستخدم: ${change.doc.id}`);
+                        
+                        // إنشاء رد
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        
+                        // حفظ الرد في Firestore
+                        await updateDoc(doc(db, "calls", change.doc.id), {
+                            answer: answer
+                        });
+                        
+                        adminWriteLog(`تم إرسال الرد إلى المستخدم: ${change.doc.id}`);
+                        updateAdminStatus(`${adminVideos.childElementCount} اتصالات نشطة`);
+                    }
+                }
+            });
+        });
+        
+        adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لاتصالات المستخدمين...');
+    </script>
 </body>
 </html>
