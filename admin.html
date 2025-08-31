@@ -454,6 +454,7 @@
         let statsInterval;
         let isViewing = false;
         let isMuted = false;
+        let trackCheckInterval;
         
         // Server configuration (for ICE candidates)
         const servers = {
@@ -518,7 +519,7 @@
         
         pauseBtn.addEventListener('click', () => {
             remoteVideo.pause();
-            logDebug('تم إيقاف الفيديو مؤقتاً');
+            logDebug('تم إوقف الفيديو مؤقتاً');
         });
         
         muteBtn.addEventListener('click', () => {
@@ -562,16 +563,23 @@
             peerConnection.ontrack = (event) => {
                 logDebug('تم استقبال تتبع وسائط عن بعد');
                 if (event.streams && event.streams[0]) {
+                    const remoteStream = event.streams[0];
+                    
+                    // التحقق من حالة التراكات المستلمة
+                    remoteStream.getTracks().forEach(track => {
+                        logDebug(`📷 استقبلنا تراك نوعه: ${track.kind}, حالة: ${track.readyState}`);
+                    });
+                    
                     logDebug('تم العثور على دفق عن بعد، إعداد عنصر الفيديو');
-                    remoteVideo.srcObject = event.streams[0];
+                    remoteVideo.srcObject = remoteStream;
                     remoteVideo.muted = true; // حل مشكلة autoplay
                     
                     // محاولة التشغيل التلقائي مع التعامل مع الأخطاء
                     remoteVideo.play().then(() => {
-                        logDebug('تم تشغيل الفيديو تلقائياً');
+                        logDebug('✅ تم تشغيل الفيديو تلقائياً');
                         autoplayMessage.style.display = 'none';
                     }).catch(e => {
-                        logDebug("خطأ في التشغيل التلقائي: " + e.message);
+                        logDebug("⚠️ فشل تشغيل الفيديو: " + e.message);
                         autoplayMessage.style.display = 'block';
                     });
                     
@@ -586,6 +594,9 @@
                     updateDuration();
                     durationInterval = setInterval(updateDuration, 1000);
                     logDebug('بدأ بث الفيديو بنجاح');
+                    
+                    // بدء التحقق من وجود إطارات في الفيديو
+                    startVideoFrameCheck();
                 }
             };
             
@@ -616,6 +627,7 @@
                 } else if (peerConnection.connectionState === 'disconnected' || 
                            peerConnection.connectionState === 'failed') {
                     if (statsInterval) clearInterval(statsInterval);
+                    if (trackCheckInterval) clearInterval(trackCheckInterval);
                 }
             };
             
@@ -699,6 +711,31 @@
             }
         }
         
+        // Check for video frames
+        function startVideoFrameCheck() {
+            if (trackCheckInterval) clearInterval(trackCheckInterval);
+            
+            let lastVideoTime = -1;
+            let noFrameCount = 0;
+            
+            trackCheckInterval = setInterval(() => {
+                if (remoteVideo.srcObject && remoteVideo.readyState >= 2) {
+                    // التحقق من الوقت الحالي للفيديو
+                    if (remoteVideo.currentTime !== lastVideoTime) {
+                        lastVideoTime = remoteVideo.currentTime;
+                        noFrameCount = 0;
+                    } else {
+                        noFrameCount++;
+                        
+                        if (noFrameCount > 5) {
+                            logDebug('⚠️ لم يتم اكتشاف أي إطارات فيديو جديدة');
+                            noFrameCount = 0;
+                        }
+                    }
+                }
+            }, 500);
+        }
+        
         // Stop viewing function
         function stopViewing() {
             logDebug('إيقاف المشاهدة');
@@ -721,6 +758,10 @@
             
             if (statsInterval) {
                 clearInterval(statsInterval);
+            }
+            
+            if (trackCheckInterval) {
+                clearInterval(trackCheckInterval);
             }
             
             broadcastDuration.textContent = '00:00:00';
