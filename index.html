@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاركة شاشة الجهاز - Live Screen Sharing</title>
+    <title>مشاركة شاشة الجهاز والكاميرا - Live Screen & Camera Sharing</title>
     <style>
         * {
             box-sizing: border-box;
@@ -158,28 +158,37 @@
             min-width: 150px;
         }
         
-        #shareScreenBtn {
+        .btn-primary {
             background: #4CAF50;
             color: white;
         }
         
-        #shareScreenBtn:hover {
+        .btn-primary:hover {
             background: #45a049;
             transform: translateY(-3px);
         }
         
-        #stopShareBtn {
-            background: #f44336;
+        .btn-secondary {
+            background: #2196F3;
             color: white;
-            display: none;
         }
         
-        #stopShareBtn:hover {
+        .btn-secondary:hover {
+            background: #0b7dda;
+            transform: translateY(-3px);
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
             background: #d32f2f;
             transform: translateY(-3px);
         }
         
-        #shareScreenBtn:disabled, #requestAccessBtn:disabled {
+        button:disabled {
             background: #666;
             cursor: not-allowed;
             transform: none;
@@ -237,6 +246,34 @@
             color: rgba(255, 255, 255, 0.7);
         }
         
+        .permissions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .permission-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .permission-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+        }
+        
+        .permission-status.granted {
+            background: #4CAF50;
+        }
+        
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -279,8 +316,8 @@
 </head>
 <body>
     <header>
-        <h1>مشاركة شاشة الجهاز مع المدير</h1>
-        <p class="description">هذا التطبيق يسمح لك بمشاركة شاشة جهازك مع المدير في الوقت الحقيقي.</p>
+        <h1>مشاركة شاشة الجهاز والكاميرا مع المدير</h1>
+        <p class="description">هذا التطبيق يسمح لك بمشاركة شاشة جهازك والكاميرا مع المدير في الوقت الحقيقي.</p>
     </header>
     
     <div class="container">
@@ -291,7 +328,22 @@
         
         <div class="content active" id="user-content">
             <h2>صفحة المستخدم</h2>
-            <p class="description">من هنا يمكنك مشاركة شاشة جهازك مع المدير.</p>
+            <p class="description">من هنا يمكنك مشاركة شاشة جهازك والكاميرا مع المدير.</p>
+            
+            <div class="permissions">
+                <div class="permission-item">
+                    <div class="permission-status" id="screenPermissionStatus"></div>
+                    <span>صلاحية مشاركة الشاشة</span>
+                </div>
+                <div class="permission-item">
+                    <div class="permission-status" id="cameraPermissionStatus"></div>
+                    <span>صلاحية الكاميرا</span>
+                </div>
+                <div class="permission-item">
+                    <div class="permission-status" id="micPermissionStatus"></div>
+                    <span>صلاحية الميكروفون</span>
+                </div>
+            </div>
             
             <div class="screen-container">
                 <div class="screen-wrapper">
@@ -302,22 +354,32 @@
                     <video id="userScreen" autoplay playsinline muted style="display:none;"></video>
                     <div class="screen-label">شاشة جهازك</div>
                 </div>
+                
+                <div class="screen-wrapper">
+                    <div class="screen-placeholder" id="userCameraPlaceholder">
+                        <div class="screen-icon">📷</div>
+                        <p>سيظهر هنا بث كاميرا جهازك</p>
+                    </div>
+                    <video id="userCamera" autoplay playsinline style="display:none;"></video>
+                    <div class="screen-label">كاميرا جهازك</div>
+                </div>
             </div>
             
-            <div class="status" id="userStatus">انقر على "مشاركة الشاشة" للبدء</div>
+            <div class="status" id="userStatus">انقر على "مشاركة الشاشة" أو "مشاركة الكاميرا" للبدء</div>
             
             <div class="controls">
-                <button id="shareScreenBtn">مشاركة الشاشة</button>
-                <button id="stopShareBtn">إيقاف المشاركة</button>
+                <button id="shareScreenBtn" class="btn-primary">مشاركة الشاشة</button>
+                <button id="shareCameraBtn" class="btn-secondary">مشاركة الكاميرا</button>
+                <button id="stopShareBtn" class="btn-danger">إيقاف المشاركة</button>
             </div>
             
             <div class="instructions">
-                <h3>كيفية مشاركة الشاشة:</h3>
+                <h3>كيفية المشاركة:</h3>
                 <ol>
-                    <li>انقر على زر "مشاركة الشاشة"</li>
-                    <li>سيطلب منك المتصفح اختيار ما تريد مشاركته (شاشة كاملة، نافذة تطبيق، أو تبويب)</li>
+                    <li>انقر على زر "مشاركة الشاشة" أو "مشاركة الكاميرا"</li>
+                    <li>سيطلب منك المتصرف اختيار ما تريد مشاركته</li>
                     <li>اختر ما تريد مشاركته وانقر على "مشاركة"</li>
-                    <li>سيتم بث شاشتك إلى المدير فوراً</li>
+                    <li>سيتم بث شاشتك أو كاميراك إلى المدير فوراً</li>
                 </ol>
             </div>
             
@@ -328,7 +390,7 @@
         
         <div class="content" id="admin-content">
             <h2>صفحة المدير</h2>
-            <p class="description">من هنا يمكنك مشاهدة شاشة المستخدمين في الوقت الحقيقي.</p>
+            <p class="description">من هنا يمكنك مشاهدة شاشة المستخدمين والكاميرا في الوقت الحقيقي.</p>
             
             <div class="screen-container">
                 <div class="screen-wrapper">
@@ -339,9 +401,23 @@
                     <video id="adminScreen" autoplay playsinline muted style="display:none;"></video>
                     <div class="screen-label">شاشة المستخدم</div>
                 </div>
+                
+                <div class="screen-wrapper">
+                    <div class="screen-placeholder" id="adminCameraPlaceholder">
+                        <div class="screen-icon">📹</div>
+                        <p>في انتظار بث الكاميرا من المستخدم...</p>
+                    </div>
+                    <video id="adminCamera" autoplay playsinline muted style="display:none;"></video>
+                    <div class="screen-label">كاميرا المستخدم</div>
+                </div>
             </div>
             
             <div class="status" id="adminStatus">لا توجد اتصالات نشطة</div>
+            
+            <div class="controls">
+                <button id="requestFilesBtn" class="btn-secondary">طلب الوصول إلى الملفات</button>
+                <button id="takeControlBtn" class="btn-primary">التحكم في الجهاز</button>
+            </div>
             
             <div class="log-container">
                 <div id="adminLog"></div>
@@ -354,7 +430,7 @@
     </div>
     
     <footer>
-        <p>تطبيق مشاركة الشاشة - 2023</p>
+        <p>تطبيق مشاركة الشاشة والكاميرا - 2023</p>
     </footer>
 
     <!-- Firebase App (core Firebase SDK) -->
@@ -390,13 +466,54 @@
             });
         });
         
+        // التحقق من توافر الدوال اللازمة
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            alert('عذراً، متصفحك لا يدعم مشاركة الشاشة. يرجى استخدام متصفح حديث مثل Chrome أو Firefox.');
+        }
+        
         // وظائف صفحة المستخدم
         const userScreen = document.getElementById('userScreen');
         const userScreenPlaceholder = document.getElementById('userScreenPlaceholder');
+        const userCamera = document.getElementById('userCamera');
+        const userCameraPlaceholder = document.getElementById('userCameraPlaceholder');
         const shareScreenBtn = document.getElementById('shareScreenBtn');
+        const shareCameraBtn = document.getElementById('shareCameraBtn');
         const stopShareBtn = document.getElementById('stopShareBtn');
         const userStatus = document.getElementById('userStatus');
         const userLog = document.getElementById('userLog');
+        
+        // عناصر حالة الصلاحيات
+        const screenPermissionStatus = document.getElementById('screenPermissionStatus');
+        const cameraPermissionStatus = document.getElementById('cameraPermissionStatus');
+        const micPermissionStatus = document.getElementById('micPermissionStatus');
+        
+        // التحقق من الصلاحيات
+        async function checkPermissions() {
+            try {
+                // التحقق من صلاحية الكاميرا
+                const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+                updatePermissionStatus(cameraPermissionStatus, cameraPermission.state);
+                cameraPermission.onchange = () => updatePermissionStatus(cameraPermissionStatus, cameraPermission.state);
+                
+                // التحقق من صلاحية الميكروفون
+                const micPermission = await navigator.permissions.query({ name: 'microphone' });
+                updatePermissionStatus(micPermissionStatus, micPermission.state);
+                micPermission.onchange = () => updatePermissionStatus(micPermissionStatus, micPermission.state);
+                
+                // لا توجد طريقة مباشرة للتحقق من صلاحية الشاشة، لذا نعتمد على المحاولة والخطأ
+                screenPermissionStatus.classList.add('granted');
+            } catch (error) {
+                userWriteLog(`خطأ في التحقق من الصلاحيات: ${error.message}`, 'error');
+            }
+        }
+        
+        function updatePermissionStatus(element, state) {
+            if (state === 'granted') {
+                element.classList.add('granted');
+            } else {
+                element.classList.remove('granted');
+            }
+        }
         
         function userWriteLog(message, type = 'info') {
             const time = new Date().toLocaleTimeString();
@@ -413,34 +530,67 @@
         
         // متغيرات حالة التطبيق
         let screenStream = null;
+        let cameraStream = null;
         let peerConnection = null;
         let screenDocRef = null;
+        let sharingType = null; // 'screen' أو 'camera'
+        
+        // التحقق من الصلاحيات عند التحميل
+        checkPermissions();
         
         // مشاركة الشاشة
-        shareScreenBtn.addEventListener('click', async () => {
+        shareScreenBtn.addEventListener('click', () => {
+            startSharing('screen');
+        });
+        
+        // مشاركة الكاميرا
+        shareCameraBtn.addEventListener('click', () => {
+            startSharing('camera');
+        });
+        
+        async function startSharing(type) {
             try {
-                userWriteLog('جاري طلب إذن مشاركة الشاشة...');
-                updateUserStatus('جاري طلب إذن مشاركة الشاشة...');
+                sharingType = type;
+                userWriteLog(`جاري طلب إذن مشاركة ${type === 'screen' ? 'الشاشة' : 'الكاميرا'}...`);
+                updateUserStatus(`جاري طلب إذن مشاركة ${type === 'screen' ? 'الشاشة' : 'الكاميرا'}...`);
                 
-                // طلب مشاركة الشاشة
-                screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: {
-                        cursor: "always",
-                        displaySurface: "monitor" // أو "window" أو "browser"
-                    },
-                    audio: true // يمكنك تعطيل الصوت إذا لم يكن مطلوبًا
-                });
+                let mediaStream;
                 
-                // عرض الشاشة المحلية
-                userScreen.srcObject = screenStream;
-                userScreen.style.display = 'block';
-                userScreenPlaceholder.style.display = 'none';
+                if (type === 'screen') {
+                    // طلب مشاركة الشاشة
+                    mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            cursor: "always",
+                            displaySurface: "monitor"
+                        },
+                        audio: true
+                    });
+                    
+                    // عرض الشاشة المحلية
+                    userScreen.srcObject = mediaStream;
+                    userScreen.style.display = 'block';
+                    userScreenPlaceholder.style.display = 'none';
+                    screenStream = mediaStream;
+                } else {
+                    // طلب مشاركة الكاميرا
+                    mediaStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    // عرض الكاميرا المحلية
+                    userCamera.srcObject = mediaStream;
+                    userCamera.style.display = 'block';
+                    userCameraPlaceholder.style.display = 'none';
+                    cameraStream = mediaStream;
+                }
                 
-                userWriteLog('تم منح إذن مشاركة الشاشة');
-                updateUserStatus('بدأ بث الشاشة');
+                userWriteLog(`تم منح إذن مشاركة ${type === 'screen' ? 'الشاشة' : 'الكاميرا'}`);
+                updateUserStatus(`بدأ بث ${type === 'screen' ? 'الشاشة' : 'الكاميرا'}`);
                 
                 // تغيير الأزرار
                 shareScreenBtn.style.display = 'none';
+                shareCameraBtn.style.display = 'none';
                 stopShareBtn.style.display = 'block';
                 
                 // إنشاء اتصال نظير مع خوادم STUN/TURN
@@ -458,11 +608,11 @@
                 });
                 
                 // إضافة مسارات البث إلى الاتصال
-                screenStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, screenStream);
+                mediaStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, mediaStream);
                     // إعادة تعيين الاتصال عند انتهاء المسار
                     track.onended = () => {
-                        userWriteLog('تم إيقاف مشاركة الشاشة', 'info');
+                        userWriteLog(`تم إيقاف مشاركة ${type === 'screen' ? 'الشاشة' : 'الكاميرا'}`, 'info');
                         stopSharing();
                     };
                 });
@@ -477,7 +627,7 @@
                 screenDocRef = await addDoc(screensCollection, {
                     offer: offer,
                     createdAt: new Date(),
-                    type: 'screen_share'
+                    type: type === 'screen' ? 'screen_share' : 'camera_share'
                 });
                 
                 userWriteLog(`تم حفظ العرض في Firestore بالمعرف: ${screenDocRef.id}`);
@@ -535,9 +685,9 @@
                 
             } catch (error) {
                 userWriteLog(`خطأ: ${error.message}`, 'error');
-                updateUserStatus('خطأ في مشاركة الشاشة');
+                updateUserStatus(`خطأ في مشاركة ${type === 'screen' ? 'الشاشة' : 'الكاميرا'}`);
             }
-        });
+        }
         
         // إيقاف مشاركة الشاشة
         stopShareBtn.addEventListener('click', stopSharing);
@@ -546,6 +696,11 @@
             if (screenStream) {
                 screenStream.getTracks().forEach(track => track.stop());
                 screenStream = null;
+            }
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
             }
             
             if (peerConnection) {
@@ -558,11 +713,16 @@
             userScreenPlaceholder.style.display = 'flex';
             userScreen.srcObject = null;
             
+            userCamera.style.display = 'none';
+            userCameraPlaceholder.style.display = 'flex';
+            userCamera.srcObject = null;
+            
             shareScreenBtn.style.display = 'block';
+            shareCameraBtn.style.display = 'block';
             stopShareBtn.style.display = 'none';
             
-            updateUserStatus('تم إيقاف مشاركة الشاشة');
-            userWriteLog('تم إيقاف مشاركة الشاشة', 'info');
+            updateUserStatus('تم إيقاف المشاركة');
+            userWriteLog('تم إيقاف المشاركة', 'info');
             
             // حذف العرض من Firestore إذا كان موجودًا
             if (screenDocRef) {
@@ -574,8 +734,12 @@
         // وظائف صفحة المدير
         const adminScreen = document.getElementById('adminScreen');
         const adminScreenPlaceholder = document.getElementById('adminScreenPlaceholder');
+        const adminCamera = document.getElementById('adminCamera');
+        const adminCameraPlaceholder = document.getElementById('adminCameraPlaceholder');
         const adminStatus = document.getElementById('adminStatus');
         const adminLog = document.getElementById('adminLog');
+        const requestFilesBtn = document.getElementById('requestFilesBtn');
+        const takeControlBtn = document.getElementById('takeControlBtn');
         
         function adminWriteLog(message, type = 'info') {
             const time = new Date().toLocaleTimeString();
@@ -590,18 +754,36 @@
             adminStatus.textContent = message;
         }
         
+        // طلب الوصول إلى الملفات
+        requestFilesBtn.addEventListener('click', () => {
+            adminWriteLog('تم إرسال طلب الوصول إلى ملفات المستخدم');
+            // هنا يمكنك إضافة منطق إرسال طلب الوصول إلى الملفات
+        });
+        
+        // طلب التحكم في الجهاز
+        takeControlBtn.addEventListener('click', () => {
+            adminWriteLog('تم إرسال طلب التحكم في جهاز المستخدم');
+            // هنا يمكنك إضافة منطق إرسال طلب التحكم في الجهاز
+        });
+        
         // الاستماع للعروض الجديدة في Firestore
         onSnapshot(screensCollection, (snapshot) => {
             snapshot.docChanges().forEach(async (change) => {
                 if (change.type === "added") {
                     const data = change.doc.data();
-                    if (data.offer && !data.answer && data.type === 'screen_share') {
-                        adminWriteLog(`تم استلام عرض مشاركة شاشة جديد: ${change.doc.id}`);
-                        updateAdminStatus('تم استلام اتصال مشاركة شاشة');
+                    if (data.offer && !data.answer) {
+                        const isScreenShare = data.type === 'screen_share';
+                        adminWriteLog(`تم استلام عرض مشاركة ${isScreenShare ? 'شاشة' : 'كاميرا'} جديد: ${change.doc.id}`);
+                        updateAdminStatus(`تم استلام اتصال مشاركة ${isScreenShare ? 'شاشة' : 'كاميرا'}`);
                         
                         // إزالة العنصر النائب إذا كان موجودًا
-                        adminScreen.style.display = 'block';
-                        adminScreenPlaceholder.style.display = 'none';
+                        if (isScreenShare) {
+                            adminScreen.style.display = 'block';
+                            adminScreenPlaceholder.style.display = 'none';
+                        } else {
+                            adminCamera.style.display = 'block';
+                            adminCameraPlaceholder.style.display = 'none';
+                        }
                         
                         // إنشاء اتصال نظير جديد
                         const peerConnection = new RTCPeerConnection({
@@ -618,9 +800,13 @@
                         
                         // التعامل مع البث الوارد
                         peerConnection.ontrack = (event) => {
-                            adminWriteLog(`تم استلام بث الشاشة من المستخدم: ${change.doc.id}`);
-                            adminScreen.srcObject = event.streams[0];
-                            updateAdminStatus('جاري استقبال بث الشاشة');
+                            adminWriteLog(`تم استلام البث من المستخدم: ${change.doc.id}`);
+                            if (isScreenShare) {
+                                adminScreen.srcObject = event.streams[0];
+                            } else {
+                                adminCamera.srcObject = event.streams[0];
+                            }
+                            updateAdminStatus(`جاري استقبال البث من المستخدم`);
                         };
                         
                         // حفظ مرشحي ICE من المدير
@@ -664,13 +850,13 @@
                         });
                         
                         adminWriteLog(`تم إرسال الرد إلى المستخدم: ${change.doc.id}`);
-                        updateAdminStatus('جاري مشاهدة شاشة المستخدم');
+                        updateAdminStatus('جاري مشاهدة البث من المستخدم');
                     }
                 }
             });
         });
         
-        adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لطلبات مشاركة الشاشة...');
+        adminWriteLog('تم تحميل صفحة المدير. جاري الاستماع لطلبات المشاركة...');
     </script>
 </body>
 </html>
