@@ -1,109 +1,96 @@
 // child.js — يبدأ مشاركة (كاميرا/ميك/شاشة)، ينشئ Offer مرة واحدة، ويستقبل Answer
 
+const localVideo = document.getElementById('localVideo');
 const shareCameraBtn = document.getElementById('shareCamera');
-const shareMicBtn    = document.getElementById('shareMic');
+const shareMicBtn = document.getElementById('shareMicrophone');
 const shareScreenBtn = document.getElementById('shareScreen');
-const stopBtn        = document.getElementById('stop');
-const localVideo     = document.getElementById('localVideo');
-const statusEl       = document.getElementById('status');
+const stopBtn = document.getElementById('stopSharing');
+const statusEl = document.getElementById('statusText');
 
-let pc = null;
 let localStream = null;
-let offerSent = false;  // منع إنشاء عروض متكررة
+let pc = null;
+let offerSent = false;
 
-const OFFER_DOC  = 'child-offer';
+const OFFER_DOC = 'child-offer';
 const ANSWER_DOC = 'parent-answer';
 
-function logStatus(t){ statusEl.textContent = t; console.log('[CHILD]', t); }
+// 🟢 لازم نعرف FieldValue هنا
+const FieldValue = firebase.firestore.FieldValue;
 
-function createPeerConnection(){
-  pc = new RTCPeerConnection({
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-  });
-
-  pc.onicecandidate = async (e) => {
-    if (e.candidate) {
-      await db.collection('calls').doc(OFFER_DOC).collection('iceCandidates').add({
-        candidate: e.candidate.toJSON(),
-        ts: FieldValue.serverTimestamp()
-      });
-    }
-  };
-
-  pc.onconnectionstatechange = () => {
-    logStatus('حالة الاتصال: ' + pc.connectionState);
-  };
+function logStatus(t) {
+  statusEl.textContent = t;
+  console.log('[CHILD]', t);
 }
 
-async function startWith(opts, label){
+async function startWith(opts, label) {
+  if (offerSent) return;
   try {
-    logStatus('طلب صلاحيات: ' + label + '...');
-    const isDisplay = !!opts.display;
-    localStream = await navigator.mediaDevices[isDisplay ? 'getDisplayMedia' : 'getUserMedia'](opts.getter);
+    logStatus(`جاري طلب إذن لـ ${label}...`);
+    localStream = opts.display
+      ? await navigator.mediaDevices.getDisplayMedia(opts.getter)
+      : await navigator.mediaDevices.getUserMedia(opts.getter);
 
-    // عرض المعاينة
     localVideo.srcObject = localStream;
 
-    // تعطيل أزرار البدء وتفعيل الإيقاف
-    shareCameraBtn.disabled = shareMicBtn.disabled = shareScreenBtn.disabled = true;
-    stopBtn.disabled = false;
+    pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
 
-    createPeerConnection();
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-    // أضف التراكات قبل إنشاء الـ Offer
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    // إرسال الـ ICE Candidates للـ Firestore
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        db.collection('calls').doc(OFFER_DOC).collection('iceCandidates').add({
+          candidate: e.candidate.toJSON(),   // ✅ نخزن كـ JSON
+          ts: FieldValue.serverTimestamp()
+        });
+      }
+    };
 
-    await createAndSendOffer();
+    // عمل Offer
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await db.collection('calls').doc(OFFER_DOC).set({
+      type: 'offer',
+      sdp: offer.sdp,
+      ts: FieldValue.serverTimestamp()
+    });
+
+    offerSent = true;
+    logStatus('تم إرسال العرض، في انتظار الرد...');
+
+    // استقبل Answer من الأب
+    db.collection('calls').doc(ANSWER_DOC).onSnapshot((snap) => {
+      const d = snap.data();
+      if (d?.type === 'answer' && !pc.currentRemoteDescription) {
+        const answer = new RTCSessionDescription({ type: 'answer', sdp: d.sdp });
+        pc.setRemoteDescription(answer).then(() => {
+          logStatus('تم إنشاء الاتصال!');
+        }).catch(console.error);
+      }
+    });
+
+    // استقبل ICE من الأب
+    db.collection('calls').doc(ANSWER_DOC).collection('iceCandidates')
+      .onSnapshot((snap) => {
+        snap.docChanges().forEach((c) => {
+          if (c.type === 'added') {
+            const data = c.doc.data();
+            pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(console.error);
+          }
+        });
+      });
 
   } catch (err) {
     logStatus('خطأ: ' + err.message);
-    console.error(err);
   }
 }
 
-async function createAndSendOffer(){
-  if (offerSent) return; // منع التكرار
-  offerSent = true;
-
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-
-  await db.collection('calls').doc(OFFER_DOC).set({
-    type: 'offer',
-    sdp: offer.sdp,
-    ts: FieldValue.serverTimestamp()
-  });
-
-  logStatus('تم إرسال العرض، في انتظار إجابة الأب...');
-
-  // استقبل الإجابة من الأب
-  db.collection('calls').doc(ANSWER_DOC).onSnapshot((snap) => {
-    if (!snap.exists) return;
-    const d = snap.data();
-    if (d.type === 'answer' && !pc.currentRemoteDescription) {
-      const answer = new RTCSessionDescription({ type: 'answer', sdp: d.sdp });
-      pc.setRemoteDescription(answer)
-        .then(() => logStatus('تم إنشاء الاتصال!'))
-        .catch(console.error);
-    }
-  });
-
-  // استقبل ICE من الأب
-  db.collection('calls').doc(ANSWER_DOC).collection('iceCandidates')
-    .onSnapshot((snap) => {
-      snap.docChanges().forEach((c) => {
-        if (c.type === 'added') {
-          const data = c.doc.data();
-          pc.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(console.error);
-        }
-      });
-    });
-}
-
-function stopSharing(){
+function stopSharing() {
   try {
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
@@ -117,15 +104,15 @@ function stopSharing(){
     stopBtn.disabled = true;
     logStatus('تم إيقاف المشاركة');
 
-    // تنظيف مستندات هذه الجلسة
+    // تنظيف Firestore
     db.collection('calls').doc(OFFER_DOC).delete().catch(()=>{});
-    db.collection('calls').doc(OFFER_DOC).collection('iceCandidates')
-      .get().then(s => s.forEach(d => d.ref.delete()));
+    db.collection('calls').doc(OFFER_DOC).collection('iceCandidates').get()
+      .then(s => s.forEach(d => d.ref.delete()));
   } catch(e){ console.error(e); }
 }
 
-// أحداث الأزرار
+// أزرار
 shareCameraBtn.onclick = () => startWith({ getter:{ video:true, audio:true } }, 'كاميرا + ميك');
-shareMicBtn.onclick    = () => startWith({ getter:{ audio:true }, display:false }, 'ميكروفون');
+shareMicBtn.onclick = () => startWith({ getter:{ audio:true }, display:false }, 'ميكروفون');
 shareScreenBtn.onclick = () => startWith({ getter:{ video:true, audio:true }, display:true }, 'مشاركة الشاشة');
-stopBtn.onclick        = stopSharing;
+stopBtn.onclick = stopSharing;
