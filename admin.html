@@ -3,14 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المشرف</title>
+    <title>لوحة تحكم المشرف - البث المباشر</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #2c3e50, #4a5568);
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --dark: #1a2530;
+            --light: #ecf0f1;
+        }
+        
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            color: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--secondary), #1a2530);
+            margin: 0;
+            padding: 0;
+            color: var(--light);
+            line-height: 1.6;
         }
         
         .header {
@@ -18,11 +35,18 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         h1 {
             margin: 0;
             color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .container {
@@ -31,6 +55,8 @@
             padding: 20px;
             gap: 20px;
             justify-content: center;
+            max-width: 1400px;
+            margin: 0 auto;
         }
         
         .card {
@@ -43,6 +69,15 @@
             max-width: 800px;
         }
         
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
         .video-container {
             position: relative;
             width: 100%;
@@ -51,6 +86,7 @@
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
         
         #remoteVideo {
@@ -67,10 +103,11 @@
             justify-content: center;
             gap: 15px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
         
         .btn {
-            background: linear-gradient(to right, #4facfe, #00f2fe);
+            background: linear-gradient(to right, var(--primary), #2980b9);
             color: white;
             border: none;
             padding: 12px 25px;
@@ -81,6 +118,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
         .btn:hover {
@@ -96,7 +134,7 @@
         }
         
         .btn-stop {
-            background: linear-gradient(to right, #ff7851, #ff5671);
+            background: linear-gradient(to right, var(--danger), #c0392b);
         }
         
         .status {
@@ -105,6 +143,10 @@
             border-radius: 10px;
             background-color: rgba(255, 255, 255, 0.1);
             margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .connection-info {
@@ -122,12 +164,17 @@
             text-align: center;
             flex: 1;
             min-width: 150px;
+            transition: transform 0.3s ease;
+        }
+        
+        .info-box:hover {
+            transform: translateY(-5px);
         }
         
         .info-box i {
             font-size: 24px;
             margin-bottom: 10px;
-            color: #4facfe;
+            color: var(--primary);
         }
         
         .no-signal {
@@ -145,6 +192,7 @@
             padding: 20px;
             font-size: 14px;
             color: #aaa;
+            background-color: rgba(0, 0, 0, 0.7);
         }
         
         .debug {
@@ -156,6 +204,13 @@
             font-size: 14px;
             max-height: 200px;
             overflow-y: auto;
+        }
+        
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
         
         .quality-selector {
@@ -187,26 +242,89 @@
             min-width: 120px;
             text-align: center;
         }
+        
+        .autoplay-message {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .video-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .video-container:hover .video-controls {
+            opacity: 1;
+        }
+        
+        .video-controls button {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .connection-info {
+                flex-direction: column;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="header">
-        <h1><i class="fas fa-tv"></i> لوحة تحكم المشرف</h1>
+        <h1><i class="fas fa-tv"></i> لوحة تحكم المشرف - البث المباشر</h1>
     </div>
     
     <div class="container">
         <div class="card">
-            <h2><i class="fas fa-video"></i> البث المباشر</h2>
-            
-            <div class="quality-selector">
-                <label for="qualitySelect">جودة البث:</label>
-                <select id="qualitySelect">
-                    <option value="auto">تلقائي</option>
-                    <option value="high">عالية</option>
-                    <option value="medium">متوسطة</option>
-                    <option value="low">منخفضة</option>
-                </select>
+            <div class="card-header">
+                <h2><i class="fas fa-video"></i> البث المباشر</h2>
+                <div class="quality-selector">
+                    <label for="qualitySelect">جودة البث:</label>
+                    <select id="qualitySelect">
+                        <option value="auto">تلقائي</option>
+                        <option value="high">عالية</option>
+                        <option value="medium">متوسطة</option>
+                        <option value="low">منخفضة</option>
+                    </select>
+                </div>
             </div>
             
             <div class="video-container">
@@ -214,6 +332,17 @@
                 <div id="noSignal" class="no-signal">
                     <i class="fas fa-satellite-dish fa-3x"></i>
                     <p>لا يوجد بث نشط حالياً</p>
+                </div>
+                
+                <div class="video-controls">
+                    <button id="playBtn" title="تشغيل"><i class="fas fa-play"></i></button>
+                    <button id="pauseBtn" title="إيقاف مؤقت"><i class="fas fa-pause"></i></button>
+                    <button id="muteBtn" title="كتم الصوت"><i class="fas fa-volume-up"></i></button>
+                    <button id="fullscreenBtn" title="ملء الشاشة"><i class="fas fa-expand"></i></button>
+                </div>
+                
+                <div id="autoplayMessage" class="autoplay-message">
+                    <p>لم يتمكن الفيديو من التشغيل تلقائياً. يرجى النقر على زر التشغيل.</p>
                 </div>
             </div>
             
@@ -227,6 +356,9 @@
                 </button>
                 <button id="stopViewing" class="btn btn-stop" disabled>
                     <i class="fas fa-stop"></i> إيقاف المشاهدة
+                </button>
+                <button id="refreshBtn" class="btn">
+                    <i class="fas fa-sync-alt"></i> إعادة الاتصال
                 </button>
             </div>
             
@@ -248,10 +380,21 @@
                     <h3>نقل البيانات</h3>
                     <p id="dataTransfer">0 KB</p>
                 </div>
+                
+                <div class="stat-item">
+                    <i class="fas fa-signal"></i>
+                    <h3>جودة البث</h3>
+                    <p id="streamQuality">غير معروف</p>
+                </div>
             </div>
             
             <div class="debug" id="debugConsole">
-                <p>سجل التصحيح:</p>
+                <div class="debug-header">
+                    <p>سجل التصحيح:</p>
+                    <button id="clearLogBtn" class="btn" style="padding: 5px 10px; font-size: 12px;">
+                        <i class="fas fa-trash"></i> مسح السجل
+                    </button>
+                </div>
                 <div id="debugLog"></div>
             </div>
         </div>
@@ -259,6 +402,7 @@
     
     <div class="footer">
         <p>يتم نقل الفيديو مباشرة بين الأجهزة ولا يتم تسجيله أو تخزينه على الخوادم.</p>
+        <p>© 2023 نظام إدارة البث المباشر</p>
     </div>
 
     <!-- Firebase App (core Firebase SDK) -->
@@ -288,11 +432,19 @@
         const status = document.getElementById('status');
         const startViewingBtn = document.getElementById('startViewing');
         const stopViewingBtn = document.getElementById('stopViewing');
+        const refreshBtn = document.getElementById('refreshBtn');
         const connectionStatus = document.getElementById('connectionStatus');
         const broadcastDuration = document.getElementById('broadcastDuration');
         const dataTransfer = document.getElementById('dataTransfer');
         const debugLog = document.getElementById('debugLog');
         const qualitySelect = document.getElementById('qualitySelect');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const autoplayMessage = document.getElementById('autoplayMessage');
+        const clearLogBtn = document.getElementById('clearLogBtn');
+        const streamQuality = document.getElementById('streamQuality');
         
         let peerConnection;
         let broadcastStartTime;
@@ -301,6 +453,7 @@
         let addedCandidates = new Set();
         let statsInterval;
         let isViewing = false;
+        let isMuted = false;
         
         // Server configuration (for ICE candidates)
         const servers = {
@@ -317,6 +470,12 @@
             debugLog.scrollTop = debugLog.scrollHeight;
             console.log(message);
         }
+        
+        // Clear debug log
+        clearLogBtn.addEventListener('click', () => {
+            debugLog.innerHTML = '';
+            logDebug('تم مسح سجل التصحيح');
+        });
         
         // Start viewing when button is clicked
         startViewingBtn.addEventListener('click', async () => {
@@ -336,11 +495,56 @@
             stopViewing();
         });
         
+        // Refresh connection
+        refreshBtn.addEventListener('click', () => {
+            logDebug('إعادة محاولة الاتصال...');
+            if (isViewing) {
+                stopViewing();
+            }
+            setTimeout(() => {
+                startViewingBtn.click();
+            }, 1000);
+        });
+        
+        // Video controls
+        playBtn.addEventListener('click', () => {
+            remoteVideo.play().then(() => {
+                autoplayMessage.style.display = 'none';
+                logDebug('تم تشغيل الفيديو يدوياً');
+            }).catch(e => {
+                logDebug(`خطأ في تشغيل الفيديو: ${e.message}`);
+            });
+        });
+        
+        pauseBtn.addEventListener('click', () => {
+            remoteVideo.pause();
+            logDebug('تم إيقاف الفيديو مؤقتاً');
+        });
+        
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            remoteVideo.muted = isMuted;
+            muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+            muteBtn.title = isMuted ? 'إلغاء كتم الصوت' : 'كتم الصوت';
+            logDebug(isMuted ? 'تم كتم الصوت' : 'تم إلغاء كتم الصوت');
+        });
+        
+        fullscreenBtn.addEventListener('click', () => {
+            if (remoteVideo.requestFullscreen) {
+                remoteVideo.requestFullscreen();
+            } else if (remoteVideo.webkitRequestFullscreen) {
+                remoteVideo.webkitRequestFullscreen();
+            } else if (remoteVideo.msRequestFullscreen) {
+                remoteVideo.msRequestFullscreen();
+            }
+        });
+        
         // Quality selection change
         qualitySelect.addEventListener('change', () => {
             if (isViewing) {
                 logDebug(`تم تغيير جودة البث إلى: ${qualitySelect.value}`);
                 // يمكن إضافة منطق لتغيير جودة البث هنا
+                streamQuality.textContent = qualitySelect.value;
             }
         });
         
@@ -354,18 +558,29 @@
             peerConnection = new RTCPeerConnection(servers);
             logDebug('تم إنشاء اتصال WebRTC');
             
-            // Handle incoming stream
+            // Handle incoming stream - هذا هو التصحيح الرئيسي
             peerConnection.ontrack = (event) => {
                 logDebug('تم استقبال تتبع وسائط عن بعد');
                 if (event.streams && event.streams[0]) {
                     logDebug('تم العثور على دفق عن بعد، إعداد عنصر الفيديو');
                     remoteVideo.srcObject = event.streams[0];
+                    remoteVideo.muted = true; // حل مشكلة autoplay
+                    
+                    // محاولة التشغيل التلقائي مع التعامل مع الأخطاء
+                    remoteVideo.play().then(() => {
+                        logDebug('تم تشغيل الفيديو تلقائياً');
+                        autoplayMessage.style.display = 'none';
+                    }).catch(e => {
+                        logDebug("خطأ في التشغيل التلقائي: " + e.message);
+                        autoplayMessage.style.display = 'block';
+                    });
+                    
                     noSignal.style.display = 'none';
                     status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بنجاح';
                     connectionStatus.textContent = 'متصل';
                     stopViewingBtn.disabled = false;
                     isViewing = true;
-                    
+
                     // Start tracking broadcast duration
                     broadcastStartTime = new Date();
                     updateDuration();
