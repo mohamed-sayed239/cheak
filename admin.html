@@ -88,6 +88,13 @@
             box-shadow: 0 6px 15px rgba(79, 172, 254, 0.4);
         }
         
+        .btn:disabled {
+            background: linear-gradient(to right, #718096, #a0aec0);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
         .btn-stop {
             background: linear-gradient(to right, #ff7851, #ff5671);
         }
@@ -150,6 +157,36 @@
             max-height: 200px;
             overflow-y: auto;
         }
+        
+        .quality-selector {
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .quality-selector select {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -161,6 +198,16 @@
     <div class="container">
         <div class="card">
             <h2><i class="fas fa-video"></i> البث المباشر</h2>
+            
+            <div class="quality-selector">
+                <label for="qualitySelect">جودة البث:</label>
+                <select id="qualitySelect">
+                    <option value="auto">تلقائي</option>
+                    <option value="high">عالية</option>
+                    <option value="medium">متوسطة</option>
+                    <option value="low">منخفضة</option>
+                </select>
+            </div>
             
             <div class="video-container">
                 <video id="remoteVideo" autoplay playsinline></video>
@@ -178,25 +225,25 @@
                 <button id="startViewing" class="btn">
                     <i class="fas fa-play"></i> بدء المشاهدة
                 </button>
-                <button id="stopViewing" class="btn btn-stop">
+                <button id="stopViewing" class="btn btn-stop" disabled>
                     <i class="fas fa-stop"></i> إيقاف المشاهدة
                 </button>
             </div>
             
-            <div class="connection-info">
-                <div class="info-box">
+            <div class="stats-container">
+                <div class="stat-item">
                     <i class="fas fa-broadcast-tower"></i>
                     <h3>حالة الاتصال</h3>
                     <p id="connectionStatus">غير متصل</p>
                 </div>
                 
-                <div class="info-box">
+                <div class="stat-item">
                     <i class="fas fa-clock"></i>
                     <h3>مدة البث</h3>
                     <p id="broadcastDuration">00:00:00</p>
                 </div>
                 
-                <div class="info-box">
+                <div class="stat-item">
                     <i class="fas fa-network-wired"></i>
                     <h3>نقل البيانات</h3>
                     <p id="dataTransfer">0 KB</p>
@@ -245,12 +292,15 @@
         const broadcastDuration = document.getElementById('broadcastDuration');
         const dataTransfer = document.getElementById('dataTransfer');
         const debugLog = document.getElementById('debugLog');
+        const qualitySelect = document.getElementById('qualitySelect');
         
         let peerConnection;
         let broadcastStartTime;
         let durationInterval;
         let dataUsage = 0;
-        let addedCandidates = new Set(); // لتجنب تكرار إضافة مرشحات ICE
+        let addedCandidates = new Set();
+        let statsInterval;
+        let isViewing = false;
         
         // Server configuration (for ICE candidates)
         const servers = {
@@ -271,17 +321,27 @@
         // Start viewing when button is clicked
         startViewingBtn.addEventListener('click', async () => {
             try {
+                startViewingBtn.disabled = true;
                 await startViewing();
             } catch (error) {
                 console.error('Error starting viewing:', error);
                 status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في بدء المشاهدة';
                 logDebug(`خطأ: ${error.message}`);
+                startViewingBtn.disabled = false;
             }
         });
         
         // Stop viewing when button is clicked
         stopViewingBtn.addEventListener('click', () => {
             stopViewing();
+        });
+        
+        // Quality selection change
+        qualitySelect.addEventListener('change', () => {
+            if (isViewing) {
+                logDebug(`تم تغيير جودة البث إلى: ${qualitySelect.value}`);
+                // يمكن إضافة منطق لتغيير جودة البث هنا
+            }
         });
         
         // Start viewing function
@@ -294,7 +354,7 @@
             peerConnection = new RTCPeerConnection(servers);
             logDebug('تم إنشاء اتصال WebRTC');
             
-            // Handle incoming stream - هذا هو التصحيح الرئيسي
+            // Handle incoming stream
             peerConnection.ontrack = (event) => {
                 logDebug('تم استقبال تتبع وسائط عن بعد');
                 if (event.streams && event.streams[0]) {
@@ -303,6 +363,8 @@
                     noSignal.style.display = 'none';
                     status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بنجاح';
                     connectionStatus.textContent = 'متصل';
+                    stopViewingBtn.disabled = false;
+                    isViewing = true;
                     
                     // Start tracking broadcast duration
                     broadcastStartTime = new Date();
@@ -333,20 +395,18 @@
                 connectionStatus.textContent = peerConnection.connectionState;
                 
                 if (peerConnection.connectionState === 'connected') {
-                    // Start tracking data usage باستخدام getStats الحقيقية
-                    setInterval(() => {
-                        if (peerConnection) {
-                            peerConnection.getStats(null).then(stats => {
-                                stats.forEach(report => {
-                                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
-                                        dataUsage = report.bytesReceived / 1024; // KB
-                                        dataTransfer.textContent = Math.round(dataUsage) + ' KB';
-                                    }
-                                });
-                            });
-                        }
-                    }, 1000);
+                    // Start tracking data usage
+                    if (statsInterval) clearInterval(statsInterval);
+                    statsInterval = setInterval(trackDataUsage, 1000);
+                } else if (peerConnection.connectionState === 'disconnected' || 
+                           peerConnection.connectionState === 'failed') {
+                    if (statsInterval) clearInterval(statsInterval);
                 }
+            };
+            
+            // Listen for ICE connection state changes
+            peerConnection.oniceconnectionstatechange = () => {
+                logDebug(`حالة اتصال ICE: ${peerConnection.iceConnectionState}`);
             };
             
             // Listen for offer from broadcaster
@@ -363,9 +423,15 @@
                     await peerConnection.setLocalDescription(answer);
                     logDebug('تم إنشاء إجابة الاتصال');
                     
-                    // Send answer to Firestore (بتحويلها إلى JSON)
+                    // تخزين الإجابة كـ object عادي بدل toJSON()
+                    const answerData = {
+                        type: answer.type,
+                        sdp: answer.sdp
+                    };
+                    
+                    // Send answer to Firestore
                     await db.collection('cameraConnections').doc('viewerAnswer').set({
-                        answer: answer.toJSON()  // تحويل الإجابة إلى JSON
+                        answer: answerData
                     });
                     logDebug('تم إرسال الإجابة إلى Firebase');
                     
@@ -397,6 +463,24 @@
             } else {
                 status.innerHTML = '<i class="fas fa-exclamation-circle"></i> لا يوجد بث نشط';
                 logDebug('لا يوجد عرض اتصال في Firebase');
+                startViewingBtn.disabled = false;
+            }
+        }
+        
+        // Track data usage
+        async function trackDataUsage() {
+            if (!peerConnection) return;
+            
+            try {
+                const stats = await peerConnection.getStats();
+                stats.forEach(report => {
+                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                        dataUsage = report.bytesReceived / 1024; // KB
+                        dataTransfer.textContent = Math.round(dataUsage) + ' KB';
+                    }
+                });
+            } catch (error) {
+                logDebug(`خطأ في تتبع البيانات: ${error.message}`);
             }
         }
         
@@ -412,15 +496,26 @@
             noSignal.style.display = 'block';
             status.innerHTML = '<i class="fas fa-pause-circle"></i> توقف عن المشاهدة';
             connectionStatus.textContent = 'غير متصل';
+            startViewingBtn.disabled = false;
+            stopViewingBtn.disabled = true;
+            isViewing = false;
             
             if (durationInterval) {
                 clearInterval(durationInterval);
+            }
+            
+            if (statsInterval) {
+                clearInterval(statsInterval);
             }
             
             broadcastDuration.textContent = '00:00:00';
             dataTransfer.textContent = '0 KB';
             dataUsage = 0;
             addedCandidates.clear();
+            
+            // مسح بيانات Firebase
+            db.collection('cameraConnections').doc('viewer').delete();
+            db.collection('cameraConnections').doc('viewerAnswer').delete();
         }
         
         // Update broadcast duration
@@ -445,6 +540,8 @@
                         status.innerHTML = '<i class="fas fa-broadcast-tower"></i> هناك بث نشط - انقر فوق "بدء المشاهدة"';
                         logDebug('تم اكتشاف بث نشط في Firebase');
                     }
+                } else {
+                    status.innerHTML = '<i class="fas fa-pause-circle"></i> لا يوجد بث نشط حالياً';
                 }
             });
             
