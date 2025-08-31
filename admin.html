@@ -139,6 +139,17 @@
             font-size: 14px;
             color: #aaa;
         }
+        
+        .debug {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -191,6 +202,11 @@
                     <p id="dataTransfer">0 KB</p>
                 </div>
             </div>
+            
+            <div class="debug" id="debugConsole">
+                <p>سجل التصحيح:</p>
+                <div id="debugLog"></div>
+            </div>
         </div>
     </div>
     
@@ -228,11 +244,13 @@
         const connectionStatus = document.getElementById('connectionStatus');
         const broadcastDuration = document.getElementById('broadcastDuration');
         const dataTransfer = document.getElementById('dataTransfer');
+        const debugLog = document.getElementById('debugLog');
         
         let peerConnection;
         let broadcastStartTime;
         let durationInterval;
         let dataUsage = 0;
+        let addedCandidates = new Set(); // لتجنب تكرار إضافة مرشحات ICE
         
         // Server configuration (for ICE candidates)
         const servers = {
@@ -242,6 +260,14 @@
             ]
         };
         
+        // Debug logging
+        function logDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `<p>[${timestamp}] ${message}</p>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+        
         // Start viewing when button is clicked
         startViewingBtn.addEventListener('click', async () => {
             try {
@@ -249,6 +275,7 @@
             } catch (error) {
                 console.error('Error starting viewing:', error);
                 status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في بدء المشاهدة';
+                logDebug(`خطأ: ${error.message}`);
             }
         });
         
@@ -261,41 +288,63 @@
         async function startViewing() {
             status.innerHTML = '<i class="fas fa-sync fa-spin"></i> جاري الاتصال...';
             connectionStatus.textContent = 'جاري الاتصال';
+            logDebug('بدء عملية المشاهدة...');
             
             // Create peer connection
             peerConnection = new RTCPeerConnection(servers);
+            logDebug('تم إنشاء اتصال WebRTC');
             
-            // Handle incoming stream
+            // Handle incoming stream - هذا هو التصحيح الرئيسي
             peerConnection.ontrack = (event) => {
-                remoteVideo.srcObject = event.streams[0];
-                noSignal.style.display = 'none';
-                status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بنجاح';
-                connectionStatus.textContent = 'متصل';
-                
-                // Start tracking broadcast duration
-                broadcastStartTime = new Date();
-                updateDuration();
-                durationInterval = setInterval(updateDuration, 1000);
+                logDebug('تم استقبال تتبع وسائط عن بعد');
+                if (event.streams && event.streams[0]) {
+                    logDebug('تم العثور على دفق عن بعد، إعداد عنصر الفيديو');
+                    remoteVideo.srcObject = event.streams[0];
+                    noSignal.style.display = 'none';
+                    status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بنجاح';
+                    connectionStatus.textContent = 'متصل';
+                    
+                    // Start tracking broadcast duration
+                    broadcastStartTime = new Date();
+                    updateDuration();
+                    durationInterval = setInterval(updateDuration, 1000);
+                    logDebug('بدأ بث الفيديو بنجاح');
+                }
             };
             
             // Listen for ICE candidates and add them to Firestore
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
-                    db.collection('cameraConnections').doc('viewer').update({
+                    const candidateString = JSON.stringify(event.candidate);
+                    logDebug(`إرسال مرشح ICE: ${candidateString.substring(0, 100)}...`);
+                    
+                    // استخدام set مع merge بدلاً من update
+                    db.collection('cameraConnections').doc('viewer').set({
                         iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate)
+                    }, { merge: true }).catch(error => {
+                        logDebug(`خطأ في إرسال مرشح ICE: ${error.message}`);
                     });
                 }
             };
             
-            // Track data usage
+            // Track connection state changes
             peerConnection.onconnectionstatechange = () => {
+                logDebug(`حالة الاتصال: ${peerConnection.connectionState}`);
+                connectionStatus.textContent = peerConnection.connectionState;
+                
                 if (peerConnection.connectionState === 'connected') {
-                    // Start tracking data usage
+                    // Start tracking data usage باستخدام getStats الحقيقية
                     setInterval(() => {
-                        // This is a simplified implementation
-                        // In a real app, you would track RTCStatsReport
-                        dataUsage += Math.random() * 100;
-                        dataTransfer.textContent = Math.round(dataUsage) + ' KB';
+                        if (peerConnection) {
+                            peerConnection.getStats(null).then(stats => {
+                                stats.forEach(report => {
+                                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                                        dataUsage = report.bytesReceived / 1024; // KB
+                                        dataTransfer.textContent = Math.round(dataUsage) + ' KB';
+                                    }
+                                });
+                            });
+                        }
                     }, 1000);
                 }
             };
@@ -305,40 +354,54 @@
             if (offerDoc.exists) {
                 const data = offerDoc.data();
                 if (data.offer) {
+                    logDebug('تم استقبال عرض اتصال، جاري المعالجة...');
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
                     
                     // Create answer
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
+                    logDebug('تم إنشاء إجابة الاتصال');
                     
                     // Send answer to Firestore
                     await db.collection('cameraConnections').doc('viewerAnswer').set({
                         answer: answer
                     });
+                    logDebug('تم إرسال الإجابة إلى Firebase');
                     
                     // Send ICE candidates to Firestore
                     await db.collection('cameraConnections').doc('viewer').set({
                         iceCandidates: []
-                    });
+                    }, { merge: true });
                     
-                    // Listen for ICE candidates from broadcaster
+                    // Listen for ICE candidates from broadcaster مع منع التكرار
                     db.collection('cameraConnections').doc('broadcaster')
                         .onSnapshot((doc) => {
                             const data = doc.data();
                             if (data && data.iceCandidates) {
+                                logDebug(`استقبال ${data.iceCandidates.length} مرشح ICE`);
                                 data.iceCandidates.forEach(candidate => {
-                                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                                    const candidateString = JSON.stringify(candidate);
+                                    
+                                    // منع إضافة مرشحات مكررة
+                                    if (!addedCandidates.has(candidateString)) {
+                                        addedCandidates.add(candidateString);
+                                        peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                                            .then(() => logDebug('تمت إضافة مرشح ICE بنجاح'))
+                                            .catch(err => logDebug(`خطأ في إضافة مرشح ICE: ${err.message}`));
+                                    }
                                 });
                             }
                         });
                 }
             } else {
                 status.innerHTML = '<i class="fas fa-exclamation-circle"></i> لا يوجد بث نشط';
+                logDebug('لا يوجد عرض اتصال في Firebase');
             }
         }
         
         // Stop viewing function
         function stopViewing() {
+            logDebug('إيقاف المشاهدة');
             if (peerConnection) {
                 peerConnection.close();
                 peerConnection = null;
@@ -356,6 +419,7 @@
             broadcastDuration.textContent = '00:00:00';
             dataTransfer.textContent = '0 KB';
             dataUsage = 0;
+            addedCandidates.clear();
         }
         
         // Update broadcast duration
@@ -378,9 +442,12 @@
                     const data = doc.data();
                     if (data.offer) {
                         status.innerHTML = '<i class="fas fa-broadcast-tower"></i> هناك بث نشط - انقر فوق "بدء المشاهدة"';
+                        logDebug('تم اكتشاف بث نشط في Firebase');
                     }
                 }
             });
+            
+        logDebug('تم تحميل لوحة التحكم بنجاح');
     </script>
 </body>
 </html>

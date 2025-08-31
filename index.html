@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشاركة الكاميرا</title>
+    <title>مشاركة الكاميرا - الباثر</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -18,11 +18,11 @@
         }
         
         .container {
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             width: 90%;
-            max-width: 600px;
+            max-width: 700px;
             padding: 30px;
             text-align: center;
         }
@@ -30,6 +30,10 @@
         h1 {
             color: #4a4a4a;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         p {
@@ -71,11 +75,18 @@
             transition: all 0.3s ease;
             margin: 10px;
             box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 20px rgba(110, 142, 251, 0.6);
+        }
+        
+        .btn.stop {
+            background: linear-gradient(to right, #ff7851, #ff5671);
         }
         
         .status {
@@ -84,7 +95,28 @@
             border-radius: 10px;
             background-color: #e8f4fd;
             color: #0b5ed7;
-            display: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .status.error {
+            background-color: #fde8e8;
+            color: #d70b0b;
+        }
+        
+        .status.success {
+            background-color: #e8f8e8;
+            color: #0bd724;
+        }
+        
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
         }
         
         .video-preview {
@@ -92,23 +124,62 @@
             max-width: 400px;
             height: 300px;
             background-color: #000;
-            margin: 20px auto;
             border-radius: 10px;
-            display: none;
+            overflow: hidden;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .footer {
             margin-top: 30px;
             font-size: 14px;
             color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        .instructions {
+            text-align: right;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #6e8efb;
+        }
+        
+        .instructions ol {
+            text-align: right;
+            padding-right: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1><i class="fas fa-video"></i> مشاركة الكاميرا</h1>
-        <p>مرحبًا! هذا التطبيق يسمح لك بمشاركة كاميرتك مع المشرف. سيتم طلب إذنك قبل الوصول إلى أي من أجهزتك.</p>
+        <h1><i class="fas fa-video"></i> نظام مشاركة الكاميرا - الباثر</h1>
+        <p>مرحبًا! هذا التطبيق يسمح لك بمشاركة كاميرتك مع المشاهدين. سيتم طلب إذنك قبل الوصول إلى أي من أجهزتك.</p>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> تعليمات الاستخدام:</h3>
+            <ol>
+                <li>انقر على زر "بدء المشاركة" للسماح بالوصول إلى الكاميرا والميكروفون</li>
+                <li>انتظر حتى يتم إنشاء الاتصال مع المشاهدين</li>
+                <li>شارك رابط المشاهد مع الشخص الذي تريد أن يرى كاميرتك</li>
+                <li>انقر على "إيقاف المشاركة" عندما تنتهي</li>
+            </ol>
+        </div>
         
         <div class="permissions">
             <h3>الأذونات المطلوبة:</h3>
@@ -126,14 +197,18 @@
             <i class="fas fa-play-circle"></i> بدء المشاركة
         </button>
         
-        <div id="videoPreview" class="video-preview"></div>
+        <div class="video-container">
+            <div id="videoPreview" class="video-preview" style="display: none;">
+                <video id="localVideo" autoplay muted playsinline></video>
+            </div>
+        </div>
         
-        <div id="status" class="status">
-            <i class="fas fa-sync fa-spin"></i> جاري الاتصال بالمشرف...
+        <div id="status" class="status" style="display: none;">
+            <i class="fas fa-sync fa-spin"></i> جاري الاتصال بالمشاهدين...
         </div>
         
         <div class="footer">
-            <p>يتم نقل الفيديو مباشرة ولا يتم تسجيله أو تخزينه على الخوادم.</p>
+            <p><i class="fas fa-shield-alt"></i> يتم نقل الفيديو مباشرة بتقنية Peer-to-Peer ولا يتم تسجيله أو تخزينه على الخوادم.</p>
         </div>
     </div>
 
@@ -161,10 +236,13 @@
         // Elements
         const startBtn = document.getElementById('startBtn');
         const videoPreview = document.getElementById('videoPreview');
+        const localVideo = document.getElementById('localVideo');
         const status = document.getElementById('status');
         
         let localStream;
         let peerConnection;
+        let addedViewerCandidates = new Set();
+        let isBroadcasting = false;
         
         // Server configuration (for ICE candidates)
         const servers = {
@@ -176,36 +254,64 @@
         
         // Start sharing when button is clicked
         startBtn.addEventListener('click', async () => {
-            try {
-                // Request camera and microphone access
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: true, 
-                    audio: true 
-                });
-                
-                // Display local video preview
-                const videoElement = document.createElement('video');
-                videoElement.srcObject = localStream;
-                videoElement.autoplay = true;
-                videoElement.muted = true;
-                videoElement.playsInline = true;
-                videoPreview.appendChild(videoElement);
-                videoPreview.style.display = 'block';
-                
-                // Change button and show status
-                startBtn.innerHTML = '<i class="fas fa-stop-circle"></i> إيقاف المشاركة';
-                startBtn.style.background = 'linear-gradient(to right, #ff7851, #ff5671)';
-                status.style.display = 'block';
-                
-                // Initialize WebRTC
-                await createPeerConnection();
-                await createOffer();
-                
-            } catch (error) {
-                console.error('Error accessing media devices:', error);
-                alert('فشل في الوصول إلى الكاميرا أو الميكروفون. يرجى التحقق من الأذونات.');
+            if (isBroadcasting) {
+                // Stop broadcasting
+                stopBroadcasting();
+            } else {
+                // Start broadcasting
+                try {
+                    // Request camera and microphone access
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: true 
+                    });
+                    
+                    // Display local video preview
+                    localVideo.srcObject = localStream;
+                    videoPreview.style.display = 'block';
+                    
+                    // Change button and show status
+                    startBtn.innerHTML = '<i class="fas fa-stop-circle"></i> إيقاف المشاركة';
+                    startBtn.classList.add('stop');
+                    status.style.display = 'flex';
+                    isBroadcasting = true;
+                    
+                    // Initialize WebRTC
+                    await createPeerConnection();
+                    await createOffer();
+                    
+                } catch (error) {
+                    console.error('Error accessing media devices:', error);
+                    status.innerHTML = '<i class="fas fa-exclamation-circle"></i> فشل في الوصول إلى الكاميرا أو الميكروفون. يرجى التحقق من الأذونات.';
+                    status.classList.add('error');
+                }
             }
         });
+        
+        // Stop broadcasting function
+        function stopBroadcasting() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            
+            // Reset UI
+            startBtn.innerHTML = '<i class="fas fa-play-circle"></i> بدء المشاركة';
+            startBtn.classList.remove('stop');
+            videoPreview.style.display = 'none';
+            status.style.display = 'none';
+            status.classList.remove('error', 'success');
+            isBroadcasting = false;
+            
+            // Clear Firestore data
+            db.collection('cameraConnections').doc('broadcaster').delete();
+            addedViewerCandidates.clear();
+            
+            console.log("تم إيقاف البث");
+        }
         
         // Create peer connection
         async function createPeerConnection() {
@@ -219,15 +325,16 @@
             // Listen for ICE candidates and add them to Firestore
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
-                    db.collection('cameraConnections').doc('broadcaster').update({
+                    db.collection('cameraConnections').doc('broadcaster').set({
                         iceCandidates: firebase.firestore.FieldValue.arrayUnion(event.candidate)
-                    });
+                    }, { merge: true });
                 }
             };
             
             // Listen for remote stream
             peerConnection.ontrack = (event) => {
                 // This would be used if we expected a stream back from viewer
+                console.log("تم استقبال تيار من المشاهد");
             };
             
             // Listen for ICE candidates from viewer
@@ -236,7 +343,11 @@
                     const data = doc.data();
                     if (data && data.iceCandidates) {
                         data.iceCandidates.forEach(candidate => {
-                            peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                            const candidateString = JSON.stringify(candidate);
+                            if (!addedViewerCandidates.has(candidateString)) {
+                                addedViewerCandidates.add(candidateString);
+                                peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                            }
                         });
                     }
                 });
@@ -247,7 +358,8 @@
                     const data = doc.data();
                     if (data && data.answer) {
                         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                        status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بالمشرف بنجاح!';
+                        status.innerHTML = '<i class="fas fa-check-circle"></i> متصل بالمشاهدين بنجاح!';
+                        status.classList.add('success');
                     }
                 });
         }
@@ -257,18 +369,21 @@
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             
-            // Clear any existing data
+            // Clear any existing data and set new offer
             await db.collection('cameraConnections').doc('broadcaster').set({
                 offer: offer,
                 iceCandidates: []
             });
             
-            // Set up listener for Firestore changes
-            db.collection('cameraConnections').doc('broadcaster')
-                .onSnapshot((doc) => {
-                    // Handle any updates if needed
-                });
+            console.log("تم إنشاء العرض وإرساله إلى Firebase");
         }
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (isBroadcasting) {
+                stopBroadcasting();
+            }
+        });
     </script>
 </body>
 </html>
